@@ -8,6 +8,7 @@ kriszyp/compose/lib/compose.js:compose.js
 documentcloud/underscore/underscore.js:underscore.js
 documentcloud/underscore/underscore.js:../js/underscore.js
 edtsech/underscore.string/lib/underscore.string.js:../js/underscore.string.js
+Modernizr/Modernizr/modernizr.js:../../public/js/modernizr.js
 douglascrockford/JSON-js/json2.js:../js/json2.js
 kriskowal/es5-shim/es5-shim.js:../js/es5-shim.js
 documentcloud/backbone/backbone.js:../js/backbone.js
