@@ -14,7 +14,7 @@ documentcloud/backbone/backbone.js:../js/backbone.js
 dvv/schema2form/index.js:../js/schema2form.js
 dvv/rql/lib:rql
 dvv/rql/lib:../js/rql
-dvv/node-formidable/lib/formidable:formidable
+felixge/node-formidable/lib/formidable:formidable
 maqr/node-xml2js/lib:xml2js
 astro/node-expat/build/default/node-expat.node:node-expat.node
 Poetro/node-xml2js-expat/lib/xml2js.js:xml2js.js
