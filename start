@@ -1,0 +1,4 @@
+#!/bin/sh
+OPTIONS=--debug
+node-inspector &
+rlwrap node $OPTIONS /usr/local/bin/coffee index.coffee
