@@ -213,30 +213,30 @@ model.User = Model 'User', Store('User'), {
 				if data.user
 					# invalid user
 					#console.log 'BAD'
-					@save null
+					@set null
 					false
 				else
 					# log out
 					#console.log 'LOGOUT'
-					@save null
+					@set null
 					true
 			else
 				if not user.password or not user.active
 					# not been activated
 					#console.log 'INACTIVE'
-					@save null
+					@set null
 					false
 				else if user.password is encryptPassword data.pass, user.salt
 					# log in
 					#console.log 'LOGIN'
 					session =
-						id: nonce()
+						id: @id
 						uid: user.id
 					session.expires = new Date(15*24*60*60*1000 + (new Date()).valueOf()) if data.remember
-					@save session
+					@set session
 					session
 				else
-					@save null
+					@set null
 					false
 	profile: (changes, method) ->
 		if method is 'GET'
