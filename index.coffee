@@ -213,30 +213,29 @@ model.User = Model 'User', Store('User'), {
 				if data.user
 					# invalid user
 					#console.log 'BAD'
-					@set null
+					@remember null
 					false
 				else
 					# log out
 					#console.log 'LOGOUT'
-					@set null
+					@remember null
 					true
 			else
 				if not user.password or not user.active
 					# not been activated
 					#console.log 'INACTIVE'
-					@set null
+					@remember null
 					false
 				else if user.password is encryptPassword data.pass, user.salt
 					# log in
 					#console.log 'LOGIN'
 					session =
-						id: @id
 						uid: user.id
 					session.expires = new Date(15*24*60*60*1000 + (new Date()).valueOf()) if data.remember
-					@set session
+					@remember session
 					session
 				else
-					@set null
+					@remember null
 					false
 	profile: (changes, method) ->
 		if method is 'GET'
@@ -384,7 +383,7 @@ facets.Bar = PermissiveFacet model.Bar, {
 FacetForGuest = Compose.create {}, {
 	home: (data) ->
 		s = {}
-		for k, v of @context
+		for k, v of @
 			if typeof v is 'function'
 				s[k] = true
 			else
