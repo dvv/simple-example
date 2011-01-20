@@ -480,7 +480,7 @@ var AdminApp = Backbone.View.extend({
 		var entity = model.get('entity');
 		var ids = this.selected;
 		var props = $(e.target).serializeObject({filterEmpty: true});
-		props = props.data; // N.B. schema2form uses data
+		if (props.data) props = props.data; // N.B. schema2form uses data
 		console.log('TOSAVE?', ids, props);
 		try {
 			// multi update
