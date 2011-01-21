@@ -78,10 +78,31 @@ _.mixin({
 	}
 });
 
-function RPC(url, data, options){
+function RPC0(url, data, options){
 	Backbone.sync('create', {
 		url: url,
 		toJSON: function(){return data;}
+	}, {
+		success: options.success || function(){
+			model.set({flash: _.T('OK')});
+		},
+		error: function(xhr){
+			console.log('ERR', arguments, model);
+			var err = xhr.responseText;
+			try {
+				err = JSON.parse(err);
+			} catch (x) {
+				if (err && err.message) err = err.message;
+			}
+			options.error && options.error(err) || model.set(_.isArray(err) ? {errors: err} : {error: err});
+		}
+	});
+}
+
+function RPC(method, data, options){
+	Backbone.sync('create', {
+		url: '/',
+		toJSON: function(){return {jsonrpc: '2.0', id: 1, method: method, params: data};}
 	}, {
 		success: options.success || function(){
 			model.set({flash: _.T('OK')});
@@ -108,7 +129,7 @@ var Entity = Backbone.Collection.extend({
 		this.refresh();
 	},
 	create: function(data, options){
-		RPC(this.name, data, {
+		RPC('create' + this.name, data, {
 			success: function(){
 				console.log('CREATED');
 				Backbone.history.loadUrl();
@@ -116,9 +137,7 @@ var Entity = Backbone.Collection.extend({
 		});
 	},
 	updateSelected: function(ids, props){
-		var url = this.name + '?in(id,$1)';
-		var data = {queryParameters: [ids], data: props};
-		RPC(url, data, {
+		RPC('update' + this.name, [ids, props], {
 			success: function(){
 				console.log('UPDATED');
 				Backbone.history.loadUrl();
@@ -126,17 +145,11 @@ var Entity = Backbone.Collection.extend({
 		});
 	},
 	destroySelected: function(ids){
-		var url = this.name + '?in(id,$1)';
-		var data = {queryParameters: [ids]};
-		Backbone.sync('delete', {
-			url: url
-		}, {
-			data: JSON.stringify(data),
+		RPC('remove' + this.name, [ids, props], {
 			success: function(){
 				console.log('REMOVED');
 				Backbone.history.loadUrl();
-			},
-			error: this.error
+			}
 		});
 	},
 	initialize: function(){
@@ -150,7 +163,7 @@ var Entity = Backbone.Collection.extend({
 	methods: function(){
 		var schema = model.get('schema');
 		var name = this.name;
-		var methods = schema && schema[name] && schema[name].methods || {};
+		var methods = schema && schema[name] && schema[name].methods || [];
 		return methods;
 	}
 });
@@ -198,7 +211,7 @@ var HeaderApp = Backbone.View.extend({
 	//
 	login: function(e){
 		var data = $(e.target).serializeObject();
-		RPC('/login', data, {
+		RPC('login', data, {
 			success: function(){
 				location.href = '/';
 			},
@@ -209,7 +222,7 @@ var HeaderApp = Backbone.View.extend({
 		return false;
 	},
 	logout: function(e){
-		RPC('/login', {}, {
+		RPC('login', {}, {
 			success: function(){
 				location.href = '/';
 			},
@@ -221,7 +234,7 @@ var HeaderApp = Backbone.View.extend({
 	},
 	signup: function(e){
 		var data = $(e.target).serializeObject();
-		RPC('/signup', {
+		RPC('signup', {
 				id: data.user,
 				password: data.pass
 		}, {
@@ -272,69 +285,6 @@ var NavApp = Backbone.View.extend({
 	}
 });
 
-var DialogApp = Backbone.View.extend({
-	el: $('#cboxLoadedContent'),
-	render: function(ids){
-		var entity = model.get('entity');
-		var name = entity.name;
-		var schema = entity.schema();
-		var methods = entity.methods();
-		var props = schema;
-		if (methods.update || methods.remove || methods.add) {
-			var m;
-			console.log('INSPECT', this, ids);
-			if (ids.length === 1) {
-				m = entity.get(ids[0]);
-			}
-			if (!m) {
-				m = new Backbone.Model;
-				m.collection = entity;
-			}
-			var html = _.partial([name+'-form', 'form'], {
-				ids: ids,
-				data: m,
-				props: props,
-				methods: methods
-			})
-		}
-		if (html) {
-			$.colorbox({html: html, transition: 'none'});
-		}
-		return this;
-	},
-	events: {
-		'submit form': 'updateSelectedOrCreate',
-		'click .action-remove': 'removeSelected'
-	},
-	initialize: function(){
-		_.bindAll(this, 'render');
-	},
-	removeSelected: function(e){
-		var entity = model.get('entity');
-		entity.destroySelected(this.selected);
-		return false;
-	},
-	updateSelectedOrCreate: function(e){
-		var entity = model.get('entity');
-		var ids = this.selected;
-		var props = $(e.target).serializeObject({filterEmpty: true});
-		props = props.data; // N.B. schema2form uses data
-		console.log('TOSAVE?', ids, props);
-		try {
-			// multi update
-			if (ids.length > 0) {
-				entity.updateSelected(ids, props);
-			// create new
-			} else {
-				entity.create(props);
-			}
-		} catch (x) {
-			console.log('EXC', x, props);
-		}
-		return false;
-	},
-});
-
 var AdminApp = Backbone.View.extend({
 	_lastClickedRow: 0,
 	selected: [],
@@ -369,7 +319,7 @@ var AdminApp = Backbone.View.extend({
 		}) : 'XXX');
 
 		// render inspector
-		if (methods.update || methods.remove || methods.add) {
+		if (methods.indexOf('update') >= 0 || methods.indexOf('remove') >= 0 || methods.indexOf('add') >= 0) {
 			this.renderEditor();
 		}
 
@@ -405,7 +355,7 @@ var AdminApp = Backbone.View.extend({
 		var schema = entity.schema();
 		var methods = entity.methods();
 		var props = schema;
-		if (methods.update || methods.remove || methods.add) {
+		if (methods.indexOf('update') >= 0 || methods.indexOf('remove') >= 0 || methods.indexOf('add') >= 0) {
 			var ids = this.selected;
 			//ids = ids || this.selected;
 			var m;
@@ -456,8 +406,6 @@ var AdminApp = Backbone.View.extend({
 		entity.bind('all', function(){
 			console.log('ENTITYEVENT', arguments);
 		});
-		//
-		new DialogApp;
 	},
 	open: function(e){
 		var id = $(e.target).attr('rel');
@@ -704,7 +652,7 @@ var ProfileApp = Backbone.View.extend({
 	changeProfile: function(e){
 		var props = $(e.target).serializeObject({filterEmpty: true});
 		if (_.size(props) > 0) {
-			RPC('/profile', props, {
+			RPC('setProfile', props, {
 				success1: function(){
 					location.reload();
 				}
@@ -715,7 +663,7 @@ var ProfileApp = Backbone.View.extend({
 	changePassword: function(e){
 		var props = $(e.target).serializeObject({filterEmpty: true});
 		if (_.size(props) > 0) {
-			RPC('/passwd', props, {
+			RPC('setPassword', props, {
 				success: function(){
 					model.set({flash: _.T('Password set OK')})
 				},
@@ -827,8 +775,8 @@ model = new Backbone.Model({
 	page: '',
 	entity: new Entity()
 });
-model.url = '/home';
-model.fetch({success: function(session){
+RPC('getRoot', {}, {success: function(session){
+model.set(session);
 
 //
 new ErrorApp;
@@ -836,18 +784,6 @@ new HeaderApp;
 new NavApp;
 new FooterApp;
 new App;
-
-window.t = new Backbone.Model({
-	u: new Backbone.Model({
-		name: 'foo'
-	})
-});
-t.bind('all', function(){
-	console.log('T:', arguments);
-});
-t.get('u').bind('all', function(){
-	console.log('U:', arguments);
-});
 
 // let the history begin
 var controller = new Controller();

@@ -159,14 +159,13 @@ schema.Group =
 				type: 'string'
 				#enum: model.Role.find.bind model.Role
 
-model.User = Model 'User', Store('User'), {
+model.User = Model 'User', null, {
 	get: Compose.around (base) -> (id) ->
 		return null unless id
 		settings.security.roots[id] and U.clone(settings.security.roots[id]) or base id
-	add: Compose.around (base) -> (data) ->
+	add: (data) ->
 		data ?= {}
-		console.log 'SIGNUP', data, @
-		session = @
+		#console.log 'SIGNUP BY', data, @user
 		Step @, [
 			() ->
 				model.User.get data.id
@@ -174,15 +173,13 @@ model.User = Model 'User', Store('User'), {
 				#console.log 'USER', user, data
 				return user if user instanceof Error
 				return SyntaxError 'Cannot create such user' if user
-				# TODO: password set, notify the user
-				# TODO: notify only if added OK!
 				# create salt, hash salty password
 				salt = nonce()
 				# generate random pass unless one is specified
 				data.password = nonce().substring(0, 7) unless data.password
-				console.log 'PASSWORD SET TO', data.password, session
+				console.log 'PASSWORD SET TO', data.password
 				password = encryptPassword data.password, salt
-				base
+				model.User.__proto__.add
 					id: data.id
 					password: password
 					salt: salt
@@ -192,9 +189,13 @@ model.User = Model 'User', Store('User'), {
 					type: data.type
 					# TODO: activation!
 					active: data.active
-					creator: session.user.id
+					creator: @user.id
 			(user) ->
-				console.log 'USER', user
+				return user if user instanceof Error
+				#console.log 'NEWUSER', user
+				# TODO: password set, notify the user, if email is set
+				#if user.email
+				#	mail user.email, 'Password set', data.password
 				user
 		]
 	update: Compose.around (base) -> (query, changes) ->
@@ -238,48 +239,50 @@ model.User = Model 'User', Store('User'), {
 					console.log 'WRONG'
 					@remember null
 					false
-	profile: (changes, method) ->
-		if method is 'GET'
-			return U.veto @user, ['password', 'salt']
-		data ?= {}
+	getProfile: () ->
+		return U.veto @user, ['password', 'salt']
+	setProfile: (changes) ->
+		changes ?= {}
 		console.log 'PROFILECHANGE', changes
 		# N.B. have to manually validate here
 		# FIXME: BADBADBAD to double schema here
-		validation = validatePart changes or {},
+		validation = validatePart changes,
 			properties:
 				id: schema.User.properties.id
 				name: schema.User.properties.name
 				email: schema.User.properties.email
 		if not validation.valid
 			return SyntaxError JSON.stringify validation.errors
-		model.User.update "id=#{@user.id}", changes
-	passwd: (data, method) ->
+		model.User.update Query().eq('id', @user.id), changes
+	setPassword: (data) ->
 		return TypeError 'Refuse to change the password' unless data.newPassword and data.newPassword is data.confirmPassword and @user.password is encryptPassword data.oldPassword, @user.salt
-		# TODO: password changed, notify the user
-		# TODO: notify only if changed OK!
 		# create salt, hash salty password
 		changes = {}
 		changes.salt = nonce()
-		console.log 'PASSWORD SET TO', data.newPassword
+		console.log 'PASSWORD SET TO', data.newPassword, @user.id
 		changes.password = encryptPassword data.newPassword, changes.salt
-		model.User.update "id=#{@user.id}", changes
+		# N.B. we use plain Store method here
+		wait model.User.__proto__.update(Query().eq('id', @user.id), changes), (err) ->
+			return err if err
+			# TODO: password changed, notify the user
+			#if @user.email
+				#	mail @user.email, 'Password set', data.password
 }
 
 defineUserType = (type) -> Compose.create model.User, {
 	add: Compose.around (base) -> (data) ->
 		data ?= {}
 		data.type = type
-		#data.creator = @user.id
-		base data
+		base.call @, data
 	find: Compose.around (base) -> (query) ->
 		q = Query(query).eq('type', type).ne('_deleted', true)
 		q = q.eq('creator', @user.id) unless @user.type is 'root'
-		base q
+		base.call @, q
 	update: Compose.around (base) -> (query, changes) ->
 		changes.type = undefined
 		q = Query(query).eq('type', type)
 		q = q.eq('creator', @user.id) unless @user.type is 'root'
-		base q, changes
+		base.call @, q, changes
 	remove: (query) ->
 		q = Query(query)
 		throw TypeError 'Please, be more specific' unless q.args.length
@@ -291,10 +294,10 @@ model.Affiliate = defineUserType 'affiliate'
 model.Merchant = defineUserType 'merchant'
 model.Admin = defineUserType 'admin'
 
-model.Role = Model 'Role', Store('Role'), {
+model.Role = Model 'Role', null, {
 }
 
-model.Group = Model 'Group', Store('Group'), {
+model.Group = Model 'Group', null, {
 }
 
 ######################################
@@ -302,7 +305,7 @@ model.Group = Model 'Group', Store('Group'), {
 ######################################
 
 parseXmlFeed = require('simple/remote').parseXmlFeed
-model.Course = Model 'Course', Store('Course'),
+model.Course = Model 'Course', null,
 	fetch: () ->
 		console.log 'FETCHING'
 		deferred = defer()
@@ -336,26 +339,26 @@ model.Course = Model 'Course', Store('Course'),
 			found
 
 # languages available in system
-model.Language = Model 'Language', Store('Language'), {
+model.Language = Model 'Language', null, {
 }
 
 # custom regions
-model.Region = Model 'Region', Store('Region'), {
+model.Region = Model 'Region', null, {
 }
 
 # currencies available in system
-model.Currency = Model 'Currency', Store('Currency'), {
+model.Currency = Model 'Currency', null, {
 }
 
 # geo info
-model.Country = Model 'Country', Store('Country'), {
+model.Country = Model 'Country', null, {
 }
 
 ######################################
 ################### Tests
 ######################################
 
-model.Bar = Model 'Bar', Store('Bar'), {
+model.Bar = Model 'Bar', null, {
 	find: Compose.around (base) ->
 		(q) ->
 			console.log 'THISINFIND', @
@@ -382,7 +385,7 @@ facets.Bar = PermissiveFacet model.Bar, {
 ######################################
 
 FacetForGuest = Compose.create {}, {
-	home: (data) ->
+	getRoot: (query) ->
 		s = {}
 		for k, v of @
 			if typeof v is 'function'
@@ -390,20 +393,16 @@ FacetForGuest = Compose.create {}, {
 			else
 				s[k] =
 					schema: v.schema
-					# TODO: don't define unless method exposed
-					methods:
-						add: not not v.add
-						update: not not v.update
-						remove: not not v.remove
+					methods: U.functions v
 		user: U.veto(@user, ['password', 'salt']), schema: s
 	login: model.User.login
 }
 
 FacetForUser = Compose.create FacetForGuest, {
-	profile: model.User.profile
-	passwd: model.User.passwd
-	Course: RestrictiveFacet model.Course,
-		schema: schema.Course
+	getProfile: model.User.getProfile
+	setProfile: model.User.setProfile
+	setPassword: model.User.setPassword
+	getCourseList: model.Course.find
 }
 
 # root -- hardcoded DB owner
@@ -431,6 +430,12 @@ FacetForRoot = Compose.create FacetForUser, {
 		schema: schema.Currency
 	getUserList: () ->
 		[1,2,3]
+	getAffiliateList: (query) ->
+		FacetForRoot.Affiliate.find.call @, query
+	#createAffiliate: (data) ->
+	#	model.User.addNew.call @, U.extend(data or {}, {type: 'affiliate'})
+	#createMerchant: (data) ->
+	#	model.User.addNew.call @, U.extend(data or {}, {type: 'merchant'})
 }
 
 FacetForAffiliate = Compose.create FacetForUser, {
@@ -453,6 +458,18 @@ FacetForAdmin = Compose.create FacetForUser, {
 	Country: FacetForRoot.Country
 	Currency: FacetForRoot.Currency
 }
+FacetForAdmin1 = U.extend {},
+	FacetForUser,
+	FacetForRoot.Affiliate,
+	FacetForRoot.Merchant,
+	FacetForRoot.Admin,
+	FacetForRoot.Role,
+	FacetForRoot.Group,
+	FacetForRoot.Course,
+	FacetForRoot.Language,
+	FacetForRoot.Region,
+	FacetForRoot.Country,
+	FacetForRoot.Currency
 
 facets.public = FacetForGuest
 facets.user = FacetForUser

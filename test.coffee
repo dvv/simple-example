@@ -40,7 +40,12 @@ global.facets = facets
 
 #model.Bar
 #p(model.Bar.find.call({foo:'bar'}));
-#p(facets.Bar.find.call({foo:'bar'}));
+#p(Q('User').where(['z']).all());
+#p(Store1('User').where(['q']).one());
+#p(Store1('User').where(['q']).where(['z']).one());
+
+model.u = Model 'User', null
+p model.u.where(['q']).one()
 
 wait waitAllKeys(model), () ->
 
@@ -53,26 +58,3 @@ wait waitAllKeys(model), () ->
 
 	# run the application
 	run app
-
-###############################
-
-User = Store 'User'
-Session = Store 'Session'
-
-App =
-	getProfile = () ->
-		model.get 'user'
-	setProfile = (changes) ->
-		model.set 'user', changes
-	auth = (id, password) ->
-		if id
-			wait User.get(id), (user) ->
-				return null unless user
-				Session.add ?
-				model.set 'user', user
-				# set cookie
-		else
-			model.unset 'user'
-			Session.remove ?
-			# clear cookie
-			return

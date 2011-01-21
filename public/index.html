@@ -187,7 +187,7 @@ Cursus est risus hendrerit et <br>
 <script id="tmpl-list" type="text/x-jquery-tmpl">
 	<div class="list-actions grid_3 alpha"><%=_.partial([name+'-actions', 'actions'],{data:{}})||'&nbsp;'%></div>
 	<div class="list grid_13 omega">
-		<% if (methods.update || methods.remove) { %>
+		<% if (methods.indexOf('update') >= 0 || methods.indexOf('remove') >= 0) { %>
 		<select class="actions">
 			<option></option>
 			<option value="all"><%=_.T('all')%></option>
@@ -205,7 +205,7 @@ Cursus est risus hendrerit et <br>
 					<% }); %>
 				</tr>
 				<tr>
-					<th><% if (methods.update || methods.remove) { %><input type="checkbox" class="action-select-all" /><% } %></th>
+					<th><% if (methods.indexOf('update') >= 0 || methods.indexOf('remove') >= 0) { %><input type="checkbox" class="action-select-all" /><% } %></th>
 					<% _.each(props, function(prop, name){ %>
 					<th>
 						<% if (prop.type === 'boolean') { %>
@@ -223,7 +223,7 @@ Cursus est risus hendrerit et <br>
 			</thead>
 			<tbody class="action-select-list"><% items.each(function(item){ var id = item.id; %>
 				<tr class="action-select-row<% if (selected.indexOf(id) >= 0) { %> selected<% } %>" rel="<%=id%>">
-					<td class="actions"><% if (methods.update || methods.remove) { %><input type="checkbox" class="action-select" <% if (selected.indexOf(id) >= 0) { %>checked="checked"<% } %> /><% } %></td>
+					<td class="actions"><% if (methods.indexOf('update') >= 0 || methods.indexOf('remove') >= 0) { %><input type="checkbox" class="action-select" <% if (selected.indexOf(id) >= 0) { %>checked="checked"<% } %> /><% } %></td>
 					<% _.each(props, function(prop, name){ var val = item.escape(name); if (prop.type === 'date') val = (new Date(item.get(name))).toLocaleString(); %>
 					<td>
 					<% if (name === 'id') { %>
@@ -261,20 +261,20 @@ Cursus est risus hendrerit et <br>
 
 <script id="tmpl-form-buttons" type="text/x-jquery-tmpl">
 	<% if (data.id) { %>
-		<% if (methods.update) { %>
+		<% if (methods.indexOf('update') >= 0) { %>
 			<button type="submit"><%=_.T('formSave')%></button>
 		<% } %>
-		<% if (methods.remove) { %>
+		<% if (methods.indexOf('remove') >= 0) { %>
 			<button class="action-remove"><%=_.T('formRemove')%></button>
 		<% } %>
 	<% } else if (ids.length > 1) { %>
-		<% if (methods.update) { %>
+		<% if (methods.indexOf('update') >= 0) { %>
 			<button type="submit"><%=_.T('formUpdate')%></button>
 		<% } %>
-		<% if (methods.remove) { %>
+		<% if (methods.indexOf('remove') >= 0) { %>
 			<button class="action-remove"><%=_.T('formRemove')%></button>
 		<% } %>
-	<% } else if (methods.add) { %>
+	<% } else if (methods.indexOf('add') >= 0) { %>
 		<button type="submit"><%=_.T('formAdd')%></button>
 	<% } %>
 </script>
