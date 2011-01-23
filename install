@@ -3,6 +3,8 @@
 deps='
 cloudhead/eyes.js/lib/eyes.js:eyes.js
 creationix/step/lib/step.js:step.js
+creationix/stack/stack.js:stack.js
+creationix/creationix:creationix
 kriszyp/promised-io/lib:promised-io
 dvv/json-schema:json-schema
 kriszyp/compose/lib/compose.js:compose.js

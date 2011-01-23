@@ -19,7 +19,10 @@ require({
 	'js/bundle.js',
 	'rql',
 	'i18n!nls/forms', // i18n
-], function(x1, RQL, i18nForms){
+	'rql1'
+], function(x1, RQL, i18nForms, RRR){
+
+window.RRR = RRR;
 
 window.RQL = RQL;
 
