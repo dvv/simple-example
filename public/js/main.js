@@ -99,9 +99,9 @@ function RPC0(url, data, options){
 	});
 }
 
-function RPC(method, data, options){
+function RPC(url, method, data, options){
 	Backbone.sync('create', {
-		url: '/',
+		url: url,
 		toJSON: function(){return {jsonrpc: '2.0', id: 1, method: method, params: data};}
 	}, {
 		success: options.success || function(){
@@ -129,7 +129,7 @@ var Entity = Backbone.Collection.extend({
 		this.refresh();
 	},
 	create: function(data, options){
-		RPC('create' + this.name, data, {
+		RPC(this.name, 'add', data, {
 			success: function(){
 				console.log('CREATED');
 				Backbone.history.loadUrl();
@@ -137,7 +137,7 @@ var Entity = Backbone.Collection.extend({
 		});
 	},
 	updateSelected: function(ids, props){
-		RPC('update' + this.name, [ids, props], {
+		RPC(this.name, 'update', [ids, props], {
 			success: function(){
 				console.log('UPDATED');
 				Backbone.history.loadUrl();
@@ -145,7 +145,7 @@ var Entity = Backbone.Collection.extend({
 		});
 	},
 	destroySelected: function(ids){
-		RPC('remove' + this.name, [ids, props], {
+		RPC(this.name, 'remove', [ids], {
 			success: function(){
 				console.log('REMOVED');
 				Backbone.history.loadUrl();
@@ -211,7 +211,7 @@ var HeaderApp = Backbone.View.extend({
 	//
 	login: function(e){
 		var data = $(e.target).serializeObject();
-		RPC('login', data, {
+		RPC('/', 'login', data, {
 			success: function(){
 				location.href = '/';
 			},
@@ -222,7 +222,7 @@ var HeaderApp = Backbone.View.extend({
 		return false;
 	},
 	logout: function(e){
-		RPC('login', {}, {
+		RPC('/', 'login', {}, {
 			success: function(){
 				location.href = '/';
 			},
@@ -234,7 +234,7 @@ var HeaderApp = Backbone.View.extend({
 	},
 	signup: function(e){
 		var data = $(e.target).serializeObject();
-		RPC('signup', {
+		RPC('/', 'signup', {
 				id: data.user,
 				password: data.pass
 		}, {
@@ -302,7 +302,7 @@ var AdminApp = Backbone.View.extend({
 		}
 		// leave only properties that are non-vetoed
 		var visibleProps = _.clone(props);
-		_.each(props, function(prop, name){if (prop.readonly || typeof prop.readonly == 'object' && prop.readonly.get) delete visibleProps[name]});
+		_.each(props, function(prop, name){if (prop.readonly === true || typeof prop.readonly == 'object' && prop.readonly.get) delete visibleProps[name]});
 		props = visibleProps;
 		//console.log('RENDER ENTITY', items);
 
@@ -652,7 +652,7 @@ var ProfileApp = Backbone.View.extend({
 	changeProfile: function(e){
 		var props = $(e.target).serializeObject({filterEmpty: true});
 		if (_.size(props) > 0) {
-			RPC('setProfile', props, {
+			RPC('/', 'setProfile', props, {
 				success1: function(){
 					location.reload();
 				}
@@ -663,7 +663,7 @@ var ProfileApp = Backbone.View.extend({
 	changePassword: function(e){
 		var props = $(e.target).serializeObject({filterEmpty: true});
 		if (_.size(props) > 0) {
-			RPC('setPassword', props, {
+			RPC('/', 'setPassword', props, {
 				success: function(){
 					model.set({flash: _.T('Password set OK')})
 				},
@@ -775,7 +775,7 @@ model = new Backbone.Model({
 	page: '',
 	entity: new Entity()
 });
-RPC('getRoot', {}, {success: function(session){
+RPC('/', 'getRoot', {}, {success: function(session){
 model.set(session);
 
 //
@@ -808,6 +808,9 @@ $(document)
 	console.log('ACTION', $(this).attr('href').replace('#', '/'));
 	return false;
 });
+
+// power up dynamic form arrays
+initFormArrays();
 
 /////////////////////
 

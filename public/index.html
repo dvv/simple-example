@@ -285,7 +285,7 @@ Cursus est risus hendrerit et <br>
 </ul>
 </script>
 
-<script id="tmpl-Course-form" type="text/x-jquery-tmpl">
+<script id="tmpl-Course-form1" type="text/x-jquery-tmpl">
 <form style="position1: fixed;">
 	<% if (ids.length < 2) { %>
 	<div class="form-field"><label>Валюта<input type="text" name="cur" value="<%=data.escape('cur')%>" /></label></div>
@@ -312,7 +312,7 @@ Cursus est risus hendrerit et <br>
 </ul>
 </script>
 
-<script id="tmpl-Affiliate-form" type="text/x-jquery-tmpl">
+<script id="tmpl-Affiliate-form1" type="text/x-jquery-tmpl">
 <form class="clearfix">
 	<% if (!ids.length) { %>
 	<div class="form-field"><label>ID<input type="text" name="id" /></label></div>
@@ -360,10 +360,10 @@ Cursus est risus hendrerit et <br>
 
 <script id="tmpl-form" type="text/x-jquery-tmpl">
 <form>
-	<% if (!ids.length) { %>
+	<!--% if (!ids.length) { %>
 	<div class="form-field"><label>ID<input type="text" name="id" /></label></div>
-	<% } %>
-	<%=obj2form(model.get('schema')[name].schema,data.toJSON(),null,name)%>
+	<% } %-->
+	<%=obj2form(model.get('schema')[name].schema,data.toJSON(),null,name, !ids.length ? 'add' : 'update')%>
 	<div class="buttons"><%=_.partial(['form-buttons'],{data:data, ids: ids, methods: methods})%></div>
 </form>
 </script>

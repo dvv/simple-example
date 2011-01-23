@@ -2553,7 +2553,7 @@ if (!String.prototype.trim) {
       var model = this;
       var success = options.success;
       options.success = function(resp) {
-        if (model.collection) model.collection.remove(model);
+        model.trigger('destroy', model, model.collection, options);
         if (success) success(model, resp);
       };
       options.error = wrapError(options.error, model, options);
@@ -2821,7 +2821,9 @@ if (!String.prototype.trim) {
       if (already) throw new Error(["Can't add the same model to a set twice", already.id]);
       this._byId[model.id] = model;
       this._byCid[model.cid] = model;
-      model.collection = this;
+      if (!model.collection) {
+        model.collection = this;
+      }
       var index = this.comparator ? this.sortedIndex(model, this.comparator) : this.length;
       this.models.splice(index, 0, model);
       model.bind('all', this._onModelEvent);
@@ -2847,7 +2849,9 @@ if (!String.prototype.trim) {
 
     // Internal method to remove a model's ties to a collection.
     _removeReference : function(model) {
-      delete model.collection;
+      if (this == model.collection) {
+        delete model.collection;
+      }
       model.unbind('all', this._onModelEvent);
     },
 
@@ -2855,8 +2859,11 @@ if (!String.prototype.trim) {
     // Sets need to update their indexes when models change ids. All other
     // events simply proxy through. "add" and "remove" events that originate
     // in other collections are ignored.
-    _onModelEvent : function(ev, model, collection) {
+    _onModelEvent : function(ev, model, collection, options) {
       if ((ev == 'add' || ev == 'remove') && collection != this) return;
+      if (ev == 'destroy') {
+        this._remove(model, options);
+      }
       if (ev === 'change:id') {
         delete this._byId[model.previous('id')];
         this._byId[model.id] = model;
@@ -3358,18 +3365,19 @@ if (!String.prototype.trim) {
 // FIXME: IE fails to render deeper than 2 array levels
 // FIXME: hardcoded id and some text
 // TODO: use Modernizr object to make defaults
-function obj2form(schema, data, path, entity){
+function obj2form(schema, data, path, entity, flavor){
 	function putAttr(value, attr){
 		return value ? attr + '="' + (value === true ? attr : value) + '" ' : '';
 	}
+	schema || (schema = {});
 	// FIXME: way rude
-	if (schema.readonly) return;
+	if (schema.readonly === true || typeof schema.readonly == 'object' && schema.readonly[flavor]) return;
 	if (!path) path = 'data';
 	var s = [];
 	if (schema.type === 'object' || schema.$ref instanceof Object || schema.type === 'array') {
-		s.push('<fieldset ' + putAttr(schema.description||entity, 'title') + '>');
+		s.push('<fieldset ' + putAttr(_.T(schema.description||'form'+entity), 'title') + '>');
 		if (schema.title)
-			s.push('<legend>' + schema.title + '</legend>');
+			s.push('<legend>' + _.T('form'+schema.title) + '</legend>');
 		// object
 		if (schema.type === 'object' || schema.$ref instanceof Object) {
 			if (schema.$ref instanceof Object) {
@@ -3378,8 +3386,7 @@ function obj2form(schema, data, path, entity){
 			// top level object ID
 			var schema = schema.properties;
 			for (var name in schema) if (schema.hasOwnProperty(name)) { var def = schema[name];
-				////s.push(obj2form(def, data && data[name], path ? path+'.'+name : name));
-				s.push(obj2form(def, data && data[name], path ? path+'['+name+']' : name, entity));
+				s.push(obj2form(def, data && data[name], path ? path+'['+name+']' : name, entity, flavor));
 			}
 		// array: provide sort/add/delete
 		} else {
@@ -3389,15 +3396,14 @@ function obj2form(schema, data, path, entity){
 			var array = data || [undefined];
 			for (var i = 0; i < array.length; ++i) {
 				s.push('<li class="array-item">');
-				/////s.push(obj2form(def, array[i], path+'['+i+']'));
-				s.push(obj2form(def, array[i], path+'[]', entity));
+				s.push(obj2form(def, array[i], path+'[]', entity, flavor));
 				// add/delete
 				// TODO: configurable text
 				s.push('<div class="array-action">');
-				s.push('<a class="array-action" rel="clone" href="#">'+_.T(entity+'_array_clone')+'</a>');
-				s.push('<a class="array-action" rel="remove" href="#">'+_.T(entity+'_array_remove')+'</a>');
-				s.push('<a class="array-action" rel="moveup" href="#">'+_.T(entity+'_array_moveup')+'</a>');
-				s.push('<a class="array-action" rel="movedown" href="#">'+_.T(entity+'_array_movedown')+'</a>');
+				s.push('<a class="array-action" rel="clone" href="#">'+_.T('formArrayClone')+'</a>');
+				s.push('<a class="array-action" rel="remove" href="#">'+_.T('formArrayRemove')+'</a>');
+				s.push('<a class="array-action" rel="moveup" href="#">'+_.T('formArrayMoveUp')+'</a>');
+				s.push('<a class="array-action" rel="movedown" href="#">'+_.T('formArrayMoveDown')+'</a>');
 				s.push('</div>');
 				s.push('</li>');
 			}
@@ -3406,8 +3412,8 @@ function obj2form(schema, data, path, entity){
 		s.push('</fieldset>');
 	} else {
 		s.push('<div class="field">');
-		//if (schema.title)
-			s.push('<label>' + _.T(entity+'_'+(schema.title||path)) + '</label>');
+		var label = 'form'+entity+(path.replace('data','').replace(/\[(\w*)\]/g, function(hz, x){return x ? _.capitalize(x) : ''}));
+		s.push('<label>' + _.T(label) + '</label>');
 		var t, type = 'text';
 		var pattern = schema.pattern;
 		if ((t = schema.type) === 'number' || t === 'integer') {
@@ -3444,6 +3450,7 @@ function obj2form(schema, data, path, entity){
 					var value = option && option.id || option;
 					var title = option && option.name || option;
 					//s.push('<option value="' + i + '" ' + putAttr(data === i, 'selected') + '>' + option + '</option>');
+					console.log('OPTION', data, value, title);
 					s.push('<option ' + putAttr(data === value, 'selected') + '>' + title + '</option>');
 				});
 				s.push('</select>');
@@ -3468,7 +3475,7 @@ function obj2form(schema, data, path, entity){
 			//s.push('<input type="' + type + '" data-type="' + type + '" name="' + path + '" ' +
 				putAttr(data && path === 'data[id]', 'readonly') +
 				putAttr(schema.description, 'title') +
-				putAttr(_.T(entity+'_'+(schema.title||path)), 'placeholder') +
+				putAttr(_.T(label + 'Placeholder'), 'placeholder') +
 				//putAttr(schema.optional !== true, 'required') +
 				putAttr(schema.minLength, 'minlength') +
 				putAttr(schema.maxLength, 'maxlength') +
