@@ -4,10 +4,9 @@ fs = require 'fs'
 
 module.exports =
 	development:
-		debug: true
 		server:
 			port: 3000
-			workers: 0
+			workers: 0 #2
 			uid: 65534
 			#sslKey: './config/key.pem'
 			#sslCert: './config/cert.pem'
@@ -17,6 +16,7 @@ module.exports =
 				dir: 'public'
 				ttl: 3600
 			#websocket: true
+			stackTrace: true
 		security:
 			#bypass: true
 			secret: 'change-me-on-production-server'
@@ -36,7 +36,7 @@ module.exports =
 			url2: 'mongodb://dvv:dvv@flame.mongohq.com:27068/irc'
 			hardLimit: 100
 		upload:
-			dir: `(function(){var path='upload';try{fs.mkdirSync(path,0750);}catch(err){};return path;})()`
+			dir: 'upload'
 		mail:
 			host: '127.0.0.1'
 			port: 25

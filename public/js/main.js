@@ -25,7 +25,7 @@ window.RQL = RQL;
 
 // improve _
 _.mixin({
-	coerce: function(instance, type){
+	coerce123: function(instance, type){
 		var date, t;
 		t = type;
 		if (t === 'string') {
