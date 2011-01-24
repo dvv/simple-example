@@ -18,11 +18,8 @@ require({
 }, [
 	'js/bundle.js',
 	'rql',
-	'i18n!nls/forms', // i18n
-	'rql1'
-], function(x1, RQL, i18nForms, RRR){
-
-window.RRR = RRR;
+	'i18n!nls/forms' // i18n
+], function(x1, RQL, i18nForms){
 
 window.RQL = RQL;
 
@@ -44,7 +41,10 @@ _.mixin({
 			instance = instance === 'false' ? false : !!instance;
 		} else if (t === 'null') {
 			instance = null;
-		} else if (t === 'object') {} else if (t === 'array') {
+		} else if (t === 'object') {
+			// FIXME: any better?
+			if (JSON && JSON.parse) try {instance = JSON.parse(instance);} catch (x){}
+		} else if (t === 'array') {
 			instance = _.toArray(instance);
 		} else if (t === 'date') {
 			date = new Date(instance);

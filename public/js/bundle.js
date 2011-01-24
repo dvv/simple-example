@@ -2220,6 +2220,43 @@ if (!String.prototype.trim) {
                 f = f.substring(m[0].length);
             }
             return o.join('');
+        },
+
+        /**
+         * Given instance, try to coerce it to type
+         * */
+        coerce: function(instance, type){
+            var date, t;
+            t = type;
+            if (t === 'string') {
+                instance = instance != null ? ''+instance : '';
+            } else if (t === 'number' || t === 'integer') {
+                if (!_.isNaN(instance)) {
+                    instance = +instance;
+                    if (t === 'integer') {
+                        instance = Math.floor(instance);
+                    }
+                }
+            } else if (t === 'boolean') {
+                instance = instance === 'false' ? false : !!instance;
+            } else if (t === 'null') {
+                instance = null;
+            } else if (t === 'object') {
+                // FIXME: any better?
+                if (JSON && JSON.parse) try {instance = JSON.parse(instance);} catch (x){}
+            } else if (t === 'array') {
+                if (instance == null || typeof instance == 'object') {
+                  instance = _.toArray(instance);
+                } else {
+                  instance = [instance];
+                }
+            } else if (t === 'date') {
+                date = new Date(instance);
+                if (!_.isNaN(date.getTime())) {
+                    instance = date;
+                }
+            }
+            return instance;
         }
     }
 
@@ -2234,7 +2271,7 @@ if (!String.prototype.trim) {
         _s[oldName] = function () {
             if (typeof console != 'undefined' && typeof console.log != 'undefined')
                 console.log(
-                    'Deprication warning: use "' + funName + '" instead "' + oldName + '". ' +
+                    'Deprecation warning: use "' + funName + '" instead "' + oldName + '". ' +
                     '"' + oldName + '" will be removed after "undescore.string" 1.1'
                 );
 
@@ -2553,7 +2590,7 @@ if (!String.prototype.trim) {
       var model = this;
       var success = options.success;
       options.success = function(resp) {
-        model.trigger('destroy', model, model.collection, options);
+        if (model.collection) model.collection.remove(model);
         if (success) success(model, resp);
       };
       options.error = wrapError(options.error, model, options);
@@ -2821,9 +2858,7 @@ if (!String.prototype.trim) {
       if (already) throw new Error(["Can't add the same model to a set twice", already.id]);
       this._byId[model.id] = model;
       this._byCid[model.cid] = model;
-      if (!model.collection) {
-        model.collection = this;
-      }
+      model.collection = this;
       var index = this.comparator ? this.sortedIndex(model, this.comparator) : this.length;
       this.models.splice(index, 0, model);
       model.bind('all', this._onModelEvent);
@@ -2849,9 +2884,7 @@ if (!String.prototype.trim) {
 
     // Internal method to remove a model's ties to a collection.
     _removeReference : function(model) {
-      if (this == model.collection) {
-        delete model.collection;
-      }
+      delete model.collection;
       model.unbind('all', this._onModelEvent);
     },
 
@@ -2859,11 +2892,8 @@ if (!String.prototype.trim) {
     // Sets need to update their indexes when models change ids. All other
     // events simply proxy through. "add" and "remove" events that originate
     // in other collections are ignored.
-    _onModelEvent : function(ev, model, collection, options) {
+    _onModelEvent : function(ev, model, collection) {
       if ((ev == 'add' || ev == 'remove') && collection != this) return;
-      if (ev == 'destroy') {
-        this._remove(model, options);
-      }
       if (ev === 'change:id') {
         delete this._byId[model.previous('id')];
         this._byId[model.id] = model;

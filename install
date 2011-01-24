@@ -35,6 +35,7 @@ bentomas/node-mime:mime
 weaver/node-mail/lib/mail:mail
 miksago/node-websocket-server/lib:ws-server
 learnboost/socket.io-node:io
+caolan/nodeunit:nodeunit
 '
 
 # download dependencies
