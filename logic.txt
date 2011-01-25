@@ -1,0 +1,149 @@
+2011-01-25
+
+- symmetric app: /Foo?a=b on server, /Foo#a=b on client -- my long-term dream! -- priority 99
+- elaborate on schema attributes for UI -- updatable, visible -- client-side -- priority 2
+- write generic secure add/update handler for data coming from web -- first to determine what properties are safe to take from the data coming! -- priority 0
+
+r -- show in get()/all() results
+c -- valid to take for add()
+w -- valid to take for update()
+F -- forced to be a certain value, no matter incoming data is
+
+N.B. creator is admin for his creatures
+
+Region, Country, Language, Currency, ...
+
+			facet
+		permissive	restrictive
+id		cr		r
+creator	Fr		r
+name	crw		r
+…		crw		r
+
+This is simple -- there will be predefined facets:
+
+facets.root.{Region,Country,...} =
+	query: model.Region.query
+	update: model.Region.update
+	remove: model.Region.remove
+
+and then custom facets corresponding to roles:
+
+facets.iCanViewRegion =
+query: facets.root.Region.query
+facets.iCanEditRegion =
+query: facets.root.Region.query
+update: facets.root.Region.update
+remove: facets.root.Region.remove
+
+facets.iCanViewCountry =
+query: facets.root.Country.query
+facets.iCanEditCountry =
+query: facets.root.Country.query
+update: facets.root.Country.update
+remove: facets.root.Country.remove
+
+and then will be groups:
+
+facets.iAmSuperGeoAdmin =
+	Region: facets.iCanEditRegion
+	Country: facets.iCanEditCountry
+
+The effective user facet is a superposition of facets named after the user group name:
+
+theFacet === effective context === “this” in all handlers === Compose.create null, [{}].concat(array-of-facets-selected-by-the-user-group-name)
+
+It’s not easy to develop _UI_ for defining _arbitrary_ roles/groups, but easy to hardcode them so far in alpha. Moreover, I insist that groups and roles be defined offline, by a single well-brained person
+
+Properties coming from web are all except id taken as-is, may be just type coercion applied
+
+The flow:
+POST /Foo D:={id: ID, foo: ‘bar’}
+	context.Foo.add = (D, next) ->
+		throw unless validate D, context.Foo.schema, flavor: ‘add’’
+		model.Foo.add D, (err, doc) ->
+			validate D, context.Foo.schema, flavor: ‘get’
+			next err, doc
+GET /Foo[q:=?foo=bar]
+	context.Foo.query = (q, next) ->
+		model.Foo.find q, (err, docs) ->
+			validate doc, context.Foo.schema, flavor: ‘get’ for doc in docs
+			next err, docs
+GET /Foo/ID
+	context.Foo.get = (ID, next) ->
+		model.Foo.findOne “id=ID”, (err, doc) ->
+			validate doc, context.Foo.schema, flavor: ‘get’
+			next err, doc
+DELETE /Foo[q:=?foo=bar]
+	context.Foo.remove = (q, next) ->
+		model.Foo.remove q, (err) ->
+			next err
+POST /Foo[q:=?foo=bar] D:={id: ID, foo: ‘baz’}
+	context.Foo.update = (q, D, next) ->
+		throw unless validate D, context.Foo.schema, existingOnly: true, flavor: ‘update’
+		model.Foo.update q, D, (err) ->
+			next err
+
+=====================================
+
+The most complicated entity which is still a real stopper -- famous
+
+User
+
+	current user type: priv == root or users with permissive facet for User or creator
+		priv	self
+----- authority -----
+id			cr	r
+creator		Fr	r	# creator is immutable, or security fails
+active		rw	r
+type		Fr	r	# type (Root,Aff,Merch,Admin) is immutable, or security fails
+roles		rw	r
+----- authentication -----
+email		cr	rw	# MUST be, or nowhere to report unhashed password to
+salt		c	rw	# should be chosen afresh so it;s not a vanilla update!
+password	c	rw	# should be hashed before storing, so it;s not a vanilla update!
+----- profile -----
+name		r	rw
+tz			r	rw
+secret		-	rw	# to validate password recovery
+…			r/-	rw
+
+N.B. if current user acts on record for _self_, his rights must be dropped for self -- that is, multi update must check for presense of self record in the recordset being updated!
+
+update(q, changes) === [
+model.User.update(q.ne(‘id’,@user.id), changes, schema.User.root)
+model.User.update(q.eq(‘id’,@user.id), changes, schema.User.user)
+]
+
+N.B. a user is admin for its profile, but a reader for the rest. Weird, but an admin itself must be just a reader of his authority!
+
+BUMP: DON’T KNOW HOW TO CODE SO FAR -- Priority 1
+
+
+User =
+	signup
+	activate
+	recover
+	signin
+	add
+	query
+	update
+	remove? == update(,{active: false})
+
+
+
+
+
+
+=============================================
+
+Store -- raw DB methods
+Model -- unrestricted (except for business logic rules)
+SecuredModel -- can validate data
+
+POST /Foo D:={id: ID, foo: ‘bar’}
+	context.Foo.add = (D, next) ->
+		throw unless validate D, context.Foo.schema, flavor: ‘add’
+		model.Foo.add D, (err, doc) ->
+			validate D, context.Foo.schema, flavor: ‘get’
+			next err, doc

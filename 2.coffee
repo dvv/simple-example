@@ -82,14 +82,86 @@ for k, v of roots
 #
 #{schema, model, facets} = require './app'
 
-db = new (require('mongo').Database)( settings.database.url, hex: true )
-simple = require 'jse'
+{Store, applySchema} = require('jse/store') settings.database
+global.Store = Store
+global.applySchema = applySchema
+
+#
+#
+#
+# TODO: extract schemas
+# TODO: extract vanilla models
+# TODO: extract User and all its flavors
+# TODO: User should be _manually_ coded, given https://docs2.google.com/document/d/1g5t-eQbbis_cYeddp4PcTJ7CUGNpzudJ8b1Q1EWLkms/edit?hl=ru# considerations
+#
+#
+#
+
+model = {}
+schema = {}
+facets = {}
+
+schema.User = schema.Affiliate = schema.Reseller = schema.Merchant = schema.Admin =
+	type: 'object'
+	properties:
+		id:
+			type: 'string'
+			pattern: '^[a-zA-Z0-9_]+$'
+			readonly:
+				update: true
+		creator:
+			type: 'string'
+			readonly:
+				update: true
+		name:
+			type: 'string'
+		password:
+			type: 'string'
+			readonly:
+				get: true
+				update: true
+		salt:
+			type: 'string'
+			readonly:
+				get: true
+				update: true
+		secret:
+			type: 'string'
+			readonly: true
+			optional: true
+		email:
+			type: 'string'
+			pattern: /^([\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+\.)*[\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+@((((([a-z0-9]{1}[a-z0-9\-]{0,62}[a-z0-9]{1})|[a-z])\.)+[a-z]{2,6})|(\d{1,3}\.){3}\d{1,3}(\:\d{1,5})?)$/i
+		regDate:
+			type: 'date'
+			readonly:
+				update: true
+		type:
+			type: 'string'
+			readonly:
+				# FIXME: shouldn't be a role?
+				update: true
+		active:
+			type: 'boolean'
+		timezone:
+			type: 'string'
+			enum: ['UTC-11', 'UTC-10', 'UTC-09', 'UTC-08', 'UTC-07', 'UTC-06', 'UTC-05', 'UTC-04', 'UTC-03', 'UTC-02', 'UTC-01', 'UTC+00', 'UTC+01', 'UTC+02', 'UTC+03', 'UTC+04', 'UTC+05', 'UTC+06', 'UTC+07', 'UTC+08', 'UTC+09', 'UTC+10', 'UTC+11', 'UTC+12']
+			default: 'UTC+04'
+		lang:
+			type: 'string'
+			enum: ['en'] # to be filled with model.Language.all()
+			default: 'en'
+
+model.User = applySchema Store('User'), schema.User
+
 
 facets =
 	root:
 		Region:
 			all: (query, next) ->
 				next null, [@, 2.0, false]
+		User:
+			query: model.User.query
 
 
 

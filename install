@@ -1,11 +1,11 @@
 #!/bin/sh
 
 deps='
+dvv/jse/lib:jse
 cloudhead/eyes.js/lib/eyes.js:eyes.js
 creationix/step/lib/step.js:step.js
 creationix/stack/stack.js:stack.js
-creationix/simple-mime/simple-mime.js:simple-mime.js
-kriszyp/promised-io/lib:promised-io
+creationix/simple-mime/simple-mime.js:mime.js
 dvv/json-schema:json-schema
 kriszyp/compose/lib/compose.js:compose.js
 documentcloud/underscore/underscore.js:underscore.js
@@ -18,25 +18,19 @@ documentcloud/backbone/backbone.js:../js/backbone.js
 dvv/schema2form/index.js:../js/schema2form.js
 dvv/rql/lib:rql
 dvv/rql/lib:../js/rql
-#felixge/node-formidable/lib/formidable:formidable
-dvv/node-formidable/lib/formidable:formidable
 maqr/node-xml2js/lib:xml2js
 astro/node-expat/build/default/node-expat.node:node-expat.node
 Poetro/node-xml2js-expat/lib/xml2js.js:xml2js.js
 tautologistics/node-htmlparser/lib/htmlparser.js:htmlparser.js
 isaacs/sax-js/lib/sax.js:sax.js
 dvv/coffee-mongo/lib:mongo
-dvv/simple/lib:simple
-mranney/node_redis:redis
 cloudhead/node-static/lib:static
 jed/cookie-node/index.js:cookie.js
-bentomas/node-mime:mime
 3rd-eden/node-useragent/useragent.js:useragent.js
 weaver/node-mail/lib/mail:mail
 miksago/node-websocket-server/lib:ws-server
 learnboost/socket.io-node:io
 caolan/nodeunit:nodeunit
-dvv/jse/lib:jse
 '
 
 # download dependencies
