@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SERVER=http://localhost:3000
+SERVER=https://localhost:3000
 #SERVER=http://localhost
 #SERVER=http://localhost:8003
 #SERVER=http://localhost:8080

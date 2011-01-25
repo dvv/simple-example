@@ -5,7 +5,6 @@ cloudhead/eyes.js/lib/eyes.js:eyes.js
 creationix/step/lib/step.js:step.js
 creationix/stack/stack.js:stack.js
 creationix/simple-mime/simple-mime.js:simple-mime.js
-creationix/creationix:creationix
 kriszyp/promised-io/lib:promised-io
 dvv/json-schema:json-schema
 kriszyp/compose/lib/compose.js:compose.js
@@ -37,6 +36,7 @@ weaver/node-mail/lib/mail:mail
 miksago/node-websocket-server/lib:ws-server
 learnboost/socket.io-node:io
 caolan/nodeunit:nodeunit
+dvv/jse/lib:jse
 '
 
 # download dependencies

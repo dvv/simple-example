@@ -1,4 +1,5 @@
 #!/bin/sh
 #OPTIONS=--debug
 #node-inspector &
-rlwrap node $OPTIONS /usr/local/bin/coffee index.coffee
+#rlwrap node $OPTIONS /usr/local/bin/coffee index.coffee
+coffee 2.coffee
