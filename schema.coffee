@@ -158,10 +158,11 @@ schema.User =
 			readonly:
 				# FIXME: shouldn't be a role?
 				update: true
-		active:
+		blocked:
 			type: 'boolean'
 			readonly:
 				update: true
+			default: false
 		group:
 			type: 'string'
 		# ----- authentication -----
@@ -206,7 +207,7 @@ schema.UserProfileRead =
 		# ----- authority -----
 		type:
 			type: 'string'
-		active:
+		blocked:
 			type: 'boolean'
 		group:
 			type: 'string'
@@ -259,7 +260,7 @@ schema.UserAuthorityRead =
 		# ----- authority -----
 		type:
 			type: 'string'
-		active:
+		blocked:
 			type: 'boolean'
 		group:
 			type: 'string'
@@ -271,7 +272,7 @@ schema.UserAuthorityWrite =
 		# ----- authority -----
 		type:
 			type: 'string'
-		active:
+		blocked:
 			type: 'boolean'
 		group:
 			type: 'string'
@@ -290,7 +291,7 @@ schema.UserAuthorityCreate =
 		# ----- authority -----
 		type:
 			type: 'string'
-		active:
+		blocked:
 			type: 'boolean'
 		group:
 			type: 'string'

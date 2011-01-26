@@ -36,6 +36,7 @@ config =
 					active: true
 		database:
 			url: 'mongodb://127.0.0.1/simple'
+			filterBy: 'active'
 			hardLimit: 100
 		upload:
 			dir: 'upload'
@@ -82,7 +83,7 @@ for k, v of roots
 #
 #{schema, model, facets} = require './app'
 
-{Store, applySchema} = require('jse/store') settings.database
+{Store, applySchema, onevent} = require('jse/store') settings.database
 global.Store = Store
 global.applySchema = applySchema
 
@@ -104,8 +105,12 @@ facets =
 
 # vanilla entities
 for id, def of schema
-	model[id] = applySchema Store(id), def
+	store = Store(id)
+	model[id] = applySchema store, def
 	facets.root[id] = model[id]
+
+onevent 'update', () ->
+	console.log 'EVENTUPDATE', arguments
 
 #model.User = applySchema Store('User'), schema.User
 
