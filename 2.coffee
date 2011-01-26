@@ -97,82 +97,25 @@ global.applySchema = applySchema
 #
 #
 
+schema = require './schema'
 model = {}
-schema = {}
-facets = {}
-
-schema.User = schema.Affiliate = schema.Reseller = schema.Merchant = schema.Admin =
-	type: 'object'
-	properties:
-		id:
-			type: 'string'
-			pattern: '^[a-zA-Z0-9_]+$'
-			readonly:
-				update: true
-		creator:
-			type: 'string'
-			readonly:
-				update: true
-		name:
-			type: 'string'
-		password:
-			type: 'string'
-			readonly:
-				get: true
-				update: true
-		salt:
-			type: 'string'
-			readonly:
-				get: true
-				update: true
-		secret:
-			type: 'string'
-			readonly: true
-			optional: true
-		email:
-			type: 'string'
-			pattern: /^([\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+\.)*[\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+@((((([a-z0-9]{1}[a-z0-9\-]{0,62}[a-z0-9]{1})|[a-z])\.)+[a-z]{2,6})|(\d{1,3}\.){3}\d{1,3}(\:\d{1,5})?)$/i
-		regDate:
-			type: 'date'
-			readonly:
-				update: true
-		type:
-			type: 'string'
-			readonly:
-				# FIXME: shouldn't be a role?
-				update: true
-		active:
-			type: 'boolean'
-		timezone:
-			type: 'string'
-			enum: ['UTC-11', 'UTC-10', 'UTC-09', 'UTC-08', 'UTC-07', 'UTC-06', 'UTC-05', 'UTC-04', 'UTC-03', 'UTC-02', 'UTC-01', 'UTC+00', 'UTC+01', 'UTC+02', 'UTC+03', 'UTC+04', 'UTC+05', 'UTC+06', 'UTC+07', 'UTC+08', 'UTC+09', 'UTC+10', 'UTC+11', 'UTC+12']
-			default: 'UTC+04'
-		lang:
-			type: 'string'
-			enum: ['en'] # to be filled with model.Language.all()
-			default: 'en'
-
-model.User = applySchema Store('User'), schema.User
-
-
 facets =
-	root:
-		Region:
-			all: (query, next) ->
-				next null, [@, 2.0, false]
-		User:
-			query: model.User.query
+	root: {}
 
+# vanilla entities
+for id, def of schema
+	model[id] = applySchema Store(id), def
+	facets.root[id] = model[id]
 
+#model.User = applySchema Store('User'), schema.User
 
 # TODO: remove from global
-#global.model = model
-#global.facets = facets
-#console.log 'SCHEMA', schema
-#console.log 'MODEL', model
-#console.log 'FACETS', facets
+global.model = model
+global.facets = facets
 
 getContext = (uid, next) ->
+	# FIXME: remove
+	uid = 'root'
 	Step(
 		() ->
 			if not uid or roots[uid]
@@ -189,7 +132,7 @@ getContext = (uid, next) ->
 			context = Compose.create.apply null, [{foo: 'bar'}].concat(level.map (x) -> facets[x])
 			# mixin the user
 			Object.defineProperty context, 'user', value: user
-			console.log 'EFFECTIVE FACET', level, context
+			#console.log 'EFFECTIVE FACET', level, context
 			next null, context
 	)
 
@@ -213,10 +156,11 @@ handler = require('stack')(
 		cookie: 'uid'
 		secret: settings.security.secret
 		getContext: getContext
-	simple.handlers.jsonBody
-		maxLength: 10
+	#simple.handlers.jsonBody
+	#	maxLength: 0 # set to >0 to limit the number of bytes
 	simple.handlers.logRequest()
-	simple.handlers.jsonrpc()
+	simple.handlers.jsonrpc
+		maxBodyLength: 0 # set to >0 to limit the number of bytes
 )
 
 # run the application
