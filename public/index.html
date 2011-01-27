@@ -60,15 +60,14 @@
 		<%=model.escape('flash')%>
 	</div>
 	<% } %>
-	<% if (model.has('error')) { %>
+	<% if (model.has('error')) { var error = model.get('error'); if (!Array.isArray(error) error = [error]; %>
+	<% _.each(error, function(err){ %>
 	<div class="error" style="background: #FF9999; border: 1px solid #CC6666">
-		<%=model.escape('error')%>
-	</div>
-	<% } %>
-	<% if (model.get('errors')) { %>
-	<% _.each(model.get('errors'), function(error){ %>
-	<div class="error" style="background: #FF9999; border: 1px solid #CC6666">
-		<%= error.property %>:<%= error.message %>
+		<% if (err.message) { %>
+		<%= err.property %>:<%= err.message %>
+		<% } else { %>
+		<%= err %>
+		<% } %>
 	</div>
 	<% }); %>
 	<% } %>

@@ -151,7 +151,15 @@ schema.User =
 			pattern: '^[a-zA-Z0-9_]+$'
 			readonly:
 				update: true
-		_meta: metaProperty
+
+schema.User0 =
+	type: 'object'
+	properties:
+		id:
+			type: 'string'
+			pattern: '^[a-zA-Z0-9_]+$'
+			readonly:
+				update: true
 		# ----- authority -----
 		type:
 			type: 'string'

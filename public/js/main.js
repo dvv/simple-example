@@ -102,7 +102,7 @@ function RPC0(url, data, options){
 	});
 }
 
-function RPC(url, method, data, options){
+function RPC1(url, method, data, options){
 	Backbone.sync('create', {
 		url: url,
 		toJSON: function(){return {jsonrpc: '2.0', id: 1, method: method, params: data};}
@@ -111,6 +111,28 @@ function RPC(url, method, data, options){
 			model.set({flash: _.T('OK')});
 		},
 		error: function(xhr){
+			console.log('ERR', arguments, model);
+			var err = xhr.responseText;
+			try {
+				err = JSON.parse(err);
+			} catch (x) {
+				if (err && err.message) err = err.message;
+			}
+			options.error && options.error(err) || model.set(_.isArray(err) ? {errors: err} : {error: err});
+		}
+	});
+}
+
+function RPC(url, method, data, options){
+	Backbone.sync('create', {
+		url: url,
+		toJSON: function(){return {jsonrpc: '2.0', id: 1, method: method, params: data};}
+	}, {
+		success: function(data){
+			//model.set({flash: _.T('OK')});
+			if (options && options.success) options.success(data);
+		},
+		error111: function(xhr){
 			console.log('ERR', arguments, model);
 			var err = xhr.responseText;
 			try {
@@ -178,7 +200,7 @@ var ErrorApp = Backbone.View.extend({
 	el: $('#errors'),
 	render: function(){
 		this.el.html(_.partial('errors', {model: model})).show().delay(5000).hide(0, function(){
-			_.each(['flash', 'error', 'errors'], function(x){
+			_.each(['flash', 'error'], function(x){
 				model.unset(x, {silent: true});
 			});
 		});
@@ -190,7 +212,6 @@ var ErrorApp = Backbone.View.extend({
 		_.bindAll(this, 'render');
 		model.bind('change:flash', this.render);
 		model.bind('change:error', this.render);
-		model.bind('change:errors', this.render);
 	}
 });
 
@@ -769,12 +790,12 @@ var Controller = Backbone.Controller.extend({
 
 /////////////////////
 
-Backbone.emulateHTTP = true;
-Backbone.emulateJSON = true;
+//Backbone.emulateHTTP = true;
+//Backbone.emulateJSON = true;
 
 // central model -- global scope
 model = new Backbone.Model({
-	errors: [],
+	error: null,
 	page: '',
 	entity: new Entity()
 });

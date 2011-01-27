@@ -79,14 +79,11 @@ for k, v of roots
 	v.password = encryptPassword v.password, v.salt
 
 #
-# load application
-#
-# FIXME: should it expose schema and model?!
+# return capability object given user id
 #
 {schema, model, facets} = require('./app') settings
-global.model = model
 
-facets.root ?= {}
+#{Store, applySchema, onevent} = require('jse/store') settings.database
 
 #
 #
@@ -99,96 +96,50 @@ facets.root ?= {}
 #
 #
 
-U.extend facets.root,
-	login: (data, next) ->
-		self = @
-		Step(
-			() ->
-				data ?= {}
-				id = data.user
-				return null unless id
-				if roots[id]
-					return U.clone roots[id]
-				else if model.User
-					model.User.get id, @
+schema = require './schema'
+model = {}
+facets =
+	root:
+		getRoot: (query, next) ->
+			s = {}
+			console.log 'ROOT', @
+			for k, v of @
+				if typeof v is 'function'
+					s[k] = true
 				else
-					null
-			(err, user) ->
-				#console.log 'GOTUSER!', user
-				if not user
-					if data.user
-						# invalid user
-						#console.log 'BAD'
-						false
-					else
-						# log out
-						#console.log 'LOGOUT'
-						true
-				else
-					if not user.password or not user.active
-						# not been activated
-						#console.log 'INACTIVE'
-						false
-					else if user.password is encryptPassword data.pass, user.salt
-						# log in
-						#console.log 'LOGIN'
-						session =
-							uid: user.id
-						session.expires = new Date(15*24*60*60*1000 + Date.now()) if data.remember
-						session
-					else
-						#console.log 'WRONG'
-						false
-			(err, session) ->
-				# save session
-				session = false if err
-				#if session and session isnt true
-				# TODO: log attempts?
-				self.remember session, next
-		)
-	getRoot: (query, next) ->
-		s = {}
-		console.log 'ROOT', @
-		for k, v of @
-			if typeof v is 'function'
-				s[k] = true
-			else if v.schema
-				console.log k, v
-				s[k] =
-					schema: v.schema
-					methods: U.functions v
-		throw 'Catch me!'
-		next null, {user: U.veto(@user, ['password', 'salt']), schema: s}
+					s[k] =
+						schema: v.schema
+						methods: U.functions v
+			next null, {user: U.veto(@user, ['password', 'salt']), schema: s} 
+
+# vanilla entities
+for id, def of schema
+	store = Store(id)
+	model[id] = applySchema store, def
+	facets.root[id] = model[id]
+
 
 #onevent 'update', () ->
 #	console.log 'EVENTUPDATE', arguments
 
-#
-# return capability object given user id
-#
+#model.User = applySchema Store('User'), schema.User
+
+# TODO: remove from global
+global.model = model
+global.facets = facets
+
 getContext = (uid, next) ->
 	Step(
 		() ->
 			if not uid or roots[uid]
 				return U.clone roots[uid]
-			else if model.User
-				model.User.get id, @
 			else
-				null
+				# TODO: here put db getter
+				this()
 		(err, user) ->
 			user ?= {}
-			# settings.server.disabled disables guest or vanilla user interface
-			# TODO: watchFile ./down to control settings.server.disabled
-			if settings.server.disabled and not roots[user.id]
-				level = 'none'
-			else if settings.security.bypass or roots[user.id]
-				level = 'root'
-			else if user.id and user.type
-				level = user.type
-			else if user.id
-				level = 'user'
-			else
-				level = 'public'
+			#level = app.User.getLevel user
+			level = 'root'
 			level = [level] unless Array.isArray level
 			# collect capabilities
 			context = Compose.create.apply null, [{foo: 'bar'}].concat(level.map (x) -> facets[x])
@@ -232,39 +183,7 @@ simple.run handler, settings.server
 #
 # tests
 #
-
-#
-# tests if doc created by user, or user creator
-#
-ownedBy = (doc, user, next) ->
-	who = doc?._meta?.history[0].who
-	console.log 'OWNED?', doc, user?.id
-	if who is user?.id
-		return next null, user
-	model.User._get who, (err, parent) ->
-		#console.log 'PARENT', arguments
-		return next err, parent unless parent
-		ownedBy parent, user, next
-
-
 assert = require 'assert'
-
-Step(
-	() ->
-		console.log 'Fetching AAC'
-		model.Region._get 'AAC', @
-		return
-	(err, result) ->
-		console.log arguments
-		assert.equal result.id, 'AAC'
-		console.log 'Checking if AAC owned by root'
-		ownedBy result, roots.root, @
-		return
-	(err, result) ->
-		console.log 'OWNED', arguments
-)
-
-'''
 Step(
 	() ->
 		console.log 'Resetting collection'
@@ -363,4 +282,3 @@ Step(
 		console.log arguments
 		#process.exit 0
 )
-'''
