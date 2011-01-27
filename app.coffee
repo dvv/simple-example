@@ -11,10 +11,17 @@ module.exports = (options) ->
 	schema = require './schema'
 
 	model = {}
+
 	# vanilla entities
 	for id, def of schema
-		store = Store(id)
+		store = Store id
 		model[id] = applySchema store, def
+
+	user = require './user'
+	User = Store 'User'
+	model.User = {}
+	for id, def of user
+		model.User[id] = applySchema User, def
 
 	facets = {}
 
