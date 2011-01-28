@@ -10,6 +10,7 @@ dvv/json-schema:json-schema
 kriszyp/compose/lib/compose.js:compose.js
 documentcloud/underscore/underscore.js:underscore.js
 documentcloud/underscore/underscore.js:../js/underscore.js
+edtsech/underscore.string/lib/underscore.string.js:underscore.string.js
 edtsech/underscore.string/lib/underscore.string.js:../js/underscore.string.js
 Modernizr/Modernizr/modernizr.js:../../public/js/modernizr.js
 douglascrockford/JSON-js/json2.js:../js/json2.js

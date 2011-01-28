@@ -32,6 +32,7 @@ config =
 					id: 'root'
 					email: 'place-admin@here.com'
 					password: '123'
+					secret: '321'
 					type: 'root'
 					active: true
 		database:
@@ -248,7 +249,7 @@ ownedBy = (doc, user, next) ->
 
 
 assert = require 'assert'
-
+'''
 Step(
 	() ->
 		console.log 'Fetching AAC'
@@ -263,7 +264,7 @@ Step(
 	(err, result) ->
 		console.log 'OWNED', arguments
 )
-
+'''
 '''
 Step(
 	() ->
