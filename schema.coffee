@@ -137,9 +137,9 @@ schema.Group =
 				enum: [] # to be filled with all Roles
 
 # fill up variable enumerations
-#schema.Role.properties.rights.items.properties.entity.enum = U.keys model
-#model.Role.all 'values(name)', (err, roles) -> schema.Group.properties.roles.items.enum = U.pluck roles, 'name'
-#model.Language.all 'values(name)', (err, langs) -> schema.User.properties.lang.enum = U.pluck langs, 'name'
-#model.Region.all 'values(name)', (err, result) -> schema.Country.properties.region.enum = U.pluck result, 'id'
+#schema.Role.properties.rights.items.properties.entity.enum = _.keys model
+#model.Role.all 'values(name)', (err, roles) -> schema.Group.properties.roles.items.enum = _.pluck roles, 'name'
+#model.Language.all 'values(name)', (err, langs) -> schema.User.properties.lang.enum = _.pluck langs, 'name'
+#model.Region.all 'values(name)', (err, result) -> schema.Country.properties.region.enum = _.pluck result, 'id'
 
 module.exports = schema

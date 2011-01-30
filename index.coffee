@@ -222,7 +222,7 @@ model.User = Model 'User', {schema: schema.User}, {
 	get: (id, next) ->
 		return next null unless id
 		if settings.security.roots[id]
-			next null, U.clone settings.security.roots[id]
+			next null, _.clone settings.security.roots[id]
 		else
 			model.User._get null, id, next
 	# given the user, return his access level
@@ -308,7 +308,7 @@ model.User = Model 'User', {schema: schema.User}, {
 					self.remember null
 					next null, false
 	getProfile: (next) ->
-		next null, U.veto(@user, ['password', 'salt'])
+		next null, _.veto(@user, ['password', 'salt'])
 	setProfile: (changes, next) ->
 		changes ?= {}
 		console.log 'PROFILECHANGE', changes
@@ -420,7 +420,7 @@ model.Course = Model 'Course', {schema: schema.Course},
 				memo[id] = item if not memo[id] or item.date > memo[id].date
 				memo
 			, {}).toArray().value()
-			found = U.query latest, query
+			found = _.query latest, query
 			found = found[0] or null if Query(query).normalize().pk
 			next null, found
 
@@ -454,8 +454,8 @@ FacetForGuest = Compose.create {}, {
 			else
 				s[k] =
 					schema: v.schema
-					methods: U.functions v
-		next null, {user: U.veto(@user, ['password', 'salt']), schema: s}
+					methods: _.functions v
+		next null, {user: _.veto(@user, ['password', 'salt']), schema: s}
 	login: model.User.login
 }
 
@@ -504,7 +504,7 @@ FacetForAdmin = Compose.create FacetForUser, {
 	Country: FacetForRoot.Country
 	Currency: FacetForRoot.Currency
 }
-FacetForAdmin1 = U.extend {},
+FacetForAdmin1 = _.extend {},
 	FacetForUser,
 	FacetForRoot.Affiliate,
 	FacetForRoot.Merchant,
@@ -534,10 +534,10 @@ global.facets = facets
 wait waitAllKeys(model), () ->
 
 	# fill up variable enumerations
-	schema.Role.properties.rights.items.properties.entity.enum = U.keys model
-	model.Role.all 'values(name)', (err, roles) -> schema.Group.properties.roles.items.enum = U.pluck roles, 'name'
-	model.Language.all 'values(name)', (err, langs) -> schema.User.properties.lang.enum = U.pluck langs, 'name'
-	model.Region.all 'values(name)', (err, result) -> schema.Country.properties.region.enum = U.pluck result, 'id'
+	schema.Role.properties.rights.items.properties.entity.enum = _.keys model
+	model.Role.all 'values(name)', (err, roles) -> schema.Group.properties.roles.items.enum = _.pluck roles, 'name'
+	model.Language.all 'values(name)', (err, langs) -> schema.User.properties.lang.enum = _.pluck langs, 'name'
+	model.Region.all 'values(name)', (err, result) -> schema.Country.properties.region.enum = _.pluck result, 'id'
 
 	# define the application
 	app = Compose.create require('events').EventEmitter, {

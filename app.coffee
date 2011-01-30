@@ -13,7 +13,7 @@ module.exports = (options) ->
 	model = {}
 
 	# vanilla entities
-	for id, def of schema
+	for own id, def of schema
 		store = Store id
 		model[id] = applySchema store, def
 
@@ -21,7 +21,7 @@ module.exports = (options) ->
 	user = require './user'
 	User = Store 'User'
 	model.User = {}
-	#for id, def of user
+	#for own id, def of user
 	#	model.User[id] = applySchema User, def
 	#model.User[id] = applySchema User, def
 
@@ -46,14 +46,14 @@ module.exports = (options) ->
 			return next null unless id
 			if id is @user?.id
 				if roots[id]
-					profile = U.clone roots[id]
+					profile = _.clone roots[id]
 					validate profile, user.PROFILE, vetoReadOnly: true, removeAdditionalProps: !schema.additionalProperties, flavor: 'get'
 					next null, profile
 				else
 					Profile.get.call @, id, next
 			else
 				if roots[id]
-					profile = U.clone roots[id]
+					profile = _.clone roots[id]
 					validate profile, user.ADMIN, vetoReadOnly: true, removeAdditionalProps: !schema.additionalProperties, flavor: 'get'
 					next null, profile
 				else
@@ -72,7 +72,7 @@ module.exports = (options) ->
 			Step(
 				# act as profile manager upon own record
 				() ->
-					profileChanges = U.clone changes
+					profileChanges = _.clone changes
 					# password is special
 					if profileChanges.password
 						plainPassword = String profileChanges.password
@@ -81,13 +81,13 @@ module.exports = (options) ->
 						profileChanges.password = encryptPassword plainPassword, profileChanges.salt
 					console.log 'SELFCHANGE', profileChanges
 					#console.log 'UPDATE1', query
-					Profile.update.call self, Query(query).eq('id', self.user.id), profileChanges, @
+					Profile.update.call self, _.rql(query).eq('id', self.user.id), profileChanges, @
 					#console.log 'UPDATE2', query
 				# act as admin upon other records
 				(err) ->
 					console.log 'OTHERCHANGE', changes
 					#console.log 'UPDATE', query
-					Admin.update.call self, Query(query).ne('id', self.user.id), changes, @
+					Admin.update.call self, _.rql(query).ne('id', self.user.id), changes, @
 				(err) ->
 					if plainPassword and self.user.email
 						console.log 'PASSWORD SET TO', plainPassword
@@ -96,7 +96,7 @@ module.exports = (options) ->
 			)
 		remove: (query, next) ->
 			# forbid self-removal
-			Admin.remove.call @, Query(query).ne('id', @user.id), next
+			Admin.remove.call @, _.rql(query).ne('id', @user.id), next
 		add: (data, next) ->
 			data ?= {}
 			self = @
@@ -130,21 +130,65 @@ module.exports = (options) ->
 					#	mail user.email, 'Password set', data.password
 					next null, user
 			)
+		login: (data, next) ->
+			self = @
+			Step(
+				() ->
+					data ?= {}
+					id = data.user
+					return null unless id
+					if roots[id]
+						return _.clone roots[id]
+					else
+						User.get id, @
+				(err, user) ->
+					#console.log 'GOTUSER!', user
+					if not user
+						if data.user
+							# invalid user
+							#console.log 'BAD'
+							false
+						else
+							# log out
+							#console.log 'LOGOUT'
+							true
+					else
+						if not user.password or not user.active
+							# not been activated
+							#console.log 'INACTIVE'
+							false
+						else if user.password is encryptPassword data.pass, user.salt
+							# log in
+							#console.log 'LOGIN'
+							session =
+								uid: user.id
+							session.expires = new Date(15*24*60*60*1000 + Date.now()) if data.remember
+							session
+						else
+							#console.log 'WRONG'
+							false
+				(err, session) ->
+					# save session
+					session = false if err
+					#if session and session isnt true
+					# TODO: log attempts?
+					self.remember session, next
+			)
 
 	model.User = AdminModel
 
-	['affiliate', 'merchant', 'reseller', 'admin'].forEach (type) ->
-		model[U.capitalize type] =
+	['affiliate', 'merchant', 'admin'].forEach (type) ->
+		model[_.capitalize type] =
 			add: (data, next) ->
 				data ?= {}
 				data.type = type
 				model.User.add.call @, data, next
 			update: (query, changes, next) ->
-				model.User.update.call @, Query(query).eq('type',type), changes, next
+				model.User.update.call @, _.rql(query).eq('type',type), changes, next
 			remove: (query, next) ->
-				model.User.remove.call @, Query(query).eq('type',type), next
+				model.User.remove.call @, _.rql(query).eq('type',type), next
 			query: (query, next) ->
-				model.User.query.call @, Query(query).eq('type',type), next
+				model.User.query.call @, _.rql(query).eq('type',type), next
 			get: (id, next) ->
 				model.User.get.call @, id, (err, result) ->
 					result = null unless result?.type is type

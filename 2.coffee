@@ -16,7 +16,9 @@ config =
 		server:
 			port: 3000
 			workers: 0 #os.cpus().length
-			uid: 65534
+			#uid: 65534
+			#gid: 65534
+			#pwd: './secured-root'
 			#sslKey: 'key.pem'
 			#sslCert: 'cert.pem'
 			repl: true
@@ -75,7 +77,7 @@ encryptPassword = (password, salt) ->
 #
 # secure admin accounts
 #
-for k, v of roots
+for own k, v of roots
 	v.salt = nonce()
 	v.password = encryptPassword v.password, v.salt
 
@@ -85,23 +87,19 @@ for k, v of roots
 # FIXME: should it expose schema and model?!
 #
 {schema, model, facets} = require('./app') settings
-global.model = model
 
-facets.root ?= {}
 
-#
-#
-#
-# TODO: extract schemas
-# TODO: extract vanilla models
-# TODO: extract User and all its flavors
-# TODO: User should be _manually_ coded, given https://docs2.google.com/document/d/1g5t-eQbbis_cYeddp4PcTJ7CUGNpzudJ8b1Q1EWLkms/edit?hl=ru# considerations
-#
-#
-#
 
-U.extend facets.root,
-	login: (data, next) ->
+PermissiveFacet = (x) -> x
+RestrictiveFacet = (x) -> x
+
+
+######################################
+################### FACETS
+######################################
+
+FacetForGuest = Compose.create {}, {
+	login123: (data, next) ->
 		self = @
 		Step(
 			() ->
@@ -109,7 +107,7 @@ U.extend facets.root,
 				id = data.user
 				return null unless id
 				if roots[id]
-					return U.clone roots[id]
+					return _.clone roots[id]
 				else if model.User
 					model.User.get id, @
 				else
@@ -149,17 +147,73 @@ U.extend facets.root,
 		)
 	getRoot: (query, next) ->
 		s = {}
-		console.log 'ROOT', @
-		for k, v of @
+		#console.log 'ROOT', @
+		for own k, v of @
 			if typeof v is 'function'
 				s[k] = true
 			else if v.schema
-				console.log k, v
+				#console.log k, v
 				s[k] =
 					schema: v.schema
-					methods: U.functions v
-		throw 'Catch me!'
-		next null, {user: U.veto(@user, ['password', 'salt']), schema: s}
+					methods: _.functions v
+		next null,
+			user: _.veto @user, ['password', 'salt']
+			schema: s
+}
+
+# user -- authenticated authority
+FacetForUser = Compose.create FacetForGuest, {
+}
+
+# root -- hardcoded DB owner
+FacetForRoot = Compose.create FacetForUser, {
+	#Course: PermissiveFacet model.Course, 'fetch'
+	Affiliate: PermissiveFacet model.Affiliate
+	Merchant: PermissiveFacet model.Merchant
+	Admin: PermissiveFacet model.Admin
+	Role: PermissiveFacet model.Role
+	Group: PermissiveFacet model.Group
+	Language: PermissiveFacet model.Language
+	Region: PermissiveFacet model.Region
+	Country: PermissiveFacet model.Country
+	Currency: PermissiveFacet model.Currency
+}
+
+FacetForAffiliate = Compose.create FacetForUser, {
+	#Affiliate: FacetForRoot.Affiliate
+}
+
+FacetForMerchant = Compose.create FacetForUser, {
+}
+
+# admin -- powerful user
+FacetForAdmin = Compose.create FacetForUser, {
+	Affiliate: FacetForRoot.Affiliate
+	Merchant: FacetForRoot.Merchant
+	Admin: FacetForRoot.Admin
+	Role: FacetForRoot.Role
+	Group: FacetForRoot.Group
+	Course: FacetForRoot.Course
+	Language: FacetForRoot.Language
+	Region: FacetForRoot.Region
+	Country: FacetForRoot.Country
+	Currency: FacetForRoot.Currency
+}
+
+facets.public = FacetForGuest
+facets.user = FacetForUser
+facets.root = FacetForRoot
+
+facets.affiliate = FacetForAffiliate
+facets.merchant = FacetForMerchant
+facets.admin = FacetForAdmin
+
+# TODO: remove from global
+global.model = model
+global.facets = facets
+
+
+console.log 'FACET', facets
 
 #onevent 'update', () ->
 #	console.log 'EVENTUPDATE', arguments
@@ -171,7 +225,7 @@ getContext = (uid, next) ->
 	Step(
 		() ->
 			if not uid or roots[uid]
-				return U.clone roots[uid]
+				return _.clone roots[uid]
 			else if model.User
 				model.User.get id, @
 			else
@@ -185,7 +239,7 @@ getContext = (uid, next) ->
 			else if settings.security.bypass or roots[user.id]
 				level = 'root'
 			else if user.id and user.type
-				level = user.type
+				level = user.type # N.B. can be an array of levels
 			else if user.id
 				level = 'user'
 			else
@@ -233,6 +287,11 @@ simple.run handler, settings.server
 #
 # tests
 #
+
+###
+model.User.query.call({user:{id:'root'}},'',console.log)
+model.User.update.call({user:{id:'root'}},'id=a1',{password:123},console.log)
+###
 
 #
 # tests if doc created by user, or user creator
@@ -312,7 +371,7 @@ Step(
 		assert.equal result.id, 'ENG', 'id is set'
 		assert.equal result._meta, null, 'no additional props'
 		console.log 'Updating localName'
-		model.Language.update Query().eq('id', 'RUS'), {name: 'Russkiy', localName: 'Рашн'}, @
+		model.Language.update _.rql().eq('id', 'RUS'), {name: 'Russkiy', localName: 'Рашн'}, @
 	(err, result) ->
 		console.log arguments
 		assert.equal err, null
