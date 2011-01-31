@@ -64,7 +64,6 @@ UserEntity =
 			default: 'en'
 		# .....
 
-#schema.User = schema.Affiliate = schema.Reseller = schema.Merchant = schema.Admin =
 schema.User =
 	type: 'object'
 	properties:
@@ -128,20 +127,8 @@ schema.PROFILE =
 		timezone: UserEntity.properties.timezone
 		lang: UserEntity.properties.lang
 
-#
-# admin acting on user authentication
-#
-schema.PASSWORD =
-	type: 'object'
-	properties:
-		id: UserEntity.properties.id
-		# ----- authority -----
-		# ----- authentication -----
-		password: UserEntity.properties.password
-		salt: UserEntity.properties.salt
-		secret: UserEntity.properties.secret
-		# ----- profile -----
-
 #console.log schema.PROFILE
+
+#schema.Affiliate = schema.Reseller = schema.Merchant = schema.Admin = _.extend schema.User 
 
 module.exports = schema

@@ -17,18 +17,30 @@ console.log = () -> consoleLog inspect arg for arg in arguments
 
 instance =
 	a: 12
+	b: 12
 
 schema =
 	type: 'object'
 	properties:
 		a:
 			type: 'any'
-			enum1: [1,2,12]
-			enum2: (fn) ->
+			enum: () -> [1,2,123]
+			enum1: (value, fn) ->
 				setTimeout () ->
-					fn null, [1,2,3]
-				, 300
+					values = [1,12,3]
+					fn not _.include values, value
+				, 1000
+		b:
+			type: 'any'
+			enum: [1,2,12]
+			enum2: (value, fn) ->
+				setTimeout () ->
+					values = [1,2,3,4]
+					fn not _.include values, value
+				, 100
 
-console.log validate instance, schema, {}, (err, result) ->
-	console.log 'DONE', arguments
+console.log validate instance, schema, {}
+
+#console.log validate instance, schema, {}, (err, result) ->
+#	console.log 'DONE', arguments
 

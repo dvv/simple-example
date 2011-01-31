@@ -4,39 +4,6 @@ require.paths.unshift __dirname + '/lib/node'
 
 schema = {}
 
-metaProperty =
-	type: 'object'
-	additionalProperties: false
-	properties:
-		version:
-			type: 'integer'
-			#
-			#
-			#
-			#readonly:
-			#	update: true
-		deleted:
-			type: 'boolean'
-			readonly:
-				add: true
-		creator:
-			type: 'string'
-			readonly:
-				update: true
-		created:
-			type: 'integer' # epoch!
-			readonly:
-				update: true
-		modifier:
-			type: 'string'
-			readonly:
-				add: true
-		modified:
-			type: 'integer' # epoch!
-			readonly:
-				add: true
-	optional: true
-
 schema.Language =
 	type: 'object'
 	additionalProperties: false
@@ -98,7 +65,7 @@ schema.Country =
 			type: 'string'
 		region:
 			type: 'string'
-			enum: () -> model.Region.all()
+			enum: (value, next) -> model.Region.get value, (err, result) -> next err
 		#currency: {$ref: 'Currency.properties.id'}
 		#iso2: {type: 'string', minLength: 2, maxLength: 2}
 		#code: {type: 'number'}
@@ -118,7 +85,7 @@ schema.Role =
 				properties:
 					entity:
 						type: 'string'
-						enum: [] # to be filled with keys of model
+						enum: () -> _.keys model # TODO: should be keys of the context!
 					access:
 						type: 'integer'
 						enum: [0, 1, 2, 3]
@@ -134,12 +101,6 @@ schema.Group =
 			type: 'array'
 			items:
 				type: 'string'
-				enum: [] # to be filled with all Roles
-
-# fill up variable enumerations
-#schema.Role.properties.rights.items.properties.entity.enum = _.keys model
-#model.Role.all 'values(name)', (err, roles) -> schema.Group.properties.roles.items.enum = _.pluck roles, 'name'
-#model.Language.all 'values(name)', (err, langs) -> schema.User.properties.lang.enum = _.pluck langs, 'name'
-#model.Region.all 'values(name)', (err, result) -> schema.Country.properties.region.enum = _.pluck result, 'id'
+				enum: (value, next) -> model.Role.get value, (err, result) -> next err
 
 module.exports = schema
