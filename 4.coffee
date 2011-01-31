@@ -15,6 +15,7 @@ console.log = () -> consoleLog inspect arg for arg in arguments
 #process.nextTick () ->
 #	console.log 'nextTick callback'
 
+###
 instance =
 	a: 12
 	b: 12
@@ -43,4 +44,14 @@ console.log validate instance, schema, {}
 
 #console.log validate instance, schema, {}, (err, result) ->
 #	console.log 'DONE', arguments
+###
 
+config = require './config'
+simple = require 'jse'
+#
+# app should provide for .getContext(uid, next) -- the method to retrieve
+#   capability object for user uid
+#
+app = require './app'
+
+require('repl').start 'test>'

@@ -6,24 +6,26 @@ cloudhead/eyes.js/lib/eyes.js:eyes.js
 creationix/step/lib/step.js:step.js
 creationix/stack/stack.js:stack.js
 creationix/simple-mime/simple-mime.js:mime.js
-dvv/json-schema:json-schema
-kriszyp/compose/lib/compose.js:compose.js
 documentcloud/underscore/underscore.js:underscore.js
 documentcloud/underscore/underscore.js:../js/underscore.js
 edtsech/underscore.string/lib/underscore.string.js:underscore.string.js
 edtsech/underscore.string/lib/underscore.string.js:../js/underscore.string.js
 Modernizr/Modernizr/modernizr.js:../../public/js/modernizr.js
 douglascrockford/JSON-js/json2.js:../js/json2.js
+#
 kriskowal/es5-shim/es5-shim.js:../js/es5-shim.js
+#
 documentcloud/backbone/backbone.js:../js/backbone.js
 dvv/schema2form/index.js:../js/schema2form.js
-dvv/rql/lib:rql
-dvv/rql/lib:../js/rql
+#dvv/rql/lib:rql
+#dvv/rql/lib:../js/rql
+#
 maqr/node-xml2js/lib:xml2js
 astro/node-expat/build/default/node-expat.node:node-expat.node
 Poetro/node-xml2js-expat/lib/xml2js.js:xml2js.js
 tautologistics/node-htmlparser/lib/htmlparser.js:htmlparser.js
 isaacs/sax-js/lib/sax.js:sax.js
+#
 dvv/coffee-mongo/lib:mongo
 cloudhead/node-static/lib:static
 jed/cookie-node/index.js:cookie.js
@@ -31,7 +33,6 @@ jed/cookie-node/index.js:cookie.js
 weaver/node-mail/lib/mail:mail
 miksago/node-websocket-server/lib:ws-server
 learnboost/socket.io-node:io
-caolan/nodeunit:nodeunit
 '
 
 # download dependencies

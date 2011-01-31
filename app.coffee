@@ -8,19 +8,20 @@ config = require './config'
 
 #
 # helpers to secure particular property definition
+# TODO: move to jse/store
 #
 ro = (attr) ->
-	Compose.create attr,
+	_.extend {}, attr,
 		readonly:
 			update: true
 
 wo = (attr) ->
-	Compose.create attr,
+	_.extend {}, attr,
 		readonly:
 			get: true
 
 cr = (attr) ->
-	Compose.create attr,
+	_.extend {}, attr,
 		readonly:
 			get: true
 			update: true
@@ -99,9 +100,15 @@ schema.Country =
 		region:
 			type: 'string'
 			enum: (value, next) -> model.Region.get value, (err, result) -> next err
+		###
 		#currency: {$ref: 'Currency.properties.id'}
-		#iso2: {type: 'string', minLength: 2, maxLength: 2}
-		#code: {type: 'number'}
+		iso2:
+			type: 'string'
+			minLength: 2
+			maxLength: 2
+		code:
+			type: 'number'
+		###
 
 schema.Role =
 	type: 'object'
@@ -186,6 +193,7 @@ UserEntity =
 			default: 'en'
 		# .....
 
+###
 schemaUser =
 	type: 'object'
 	properties:
@@ -197,13 +205,14 @@ schemaUser =
 		# ----- authentication -----
 		password: UserEntity.properties.password
 		salt: UserEntity.properties.salt
-		secret: UserEntity.properties.secret
-		# ----- profile -----
+		# ----- public profile -----
 		name: UserEntity.properties.name
 		email: UserEntity.properties.email
-		# ----- profile -----
 		timezone: UserEntity.properties.timezone
 		lang: UserEntity.properties.lang
+		# ----- private profile -----
+		secret: UserEntity.properties.secret
+###
 
 #
 # admin acting on other users
@@ -213,19 +222,25 @@ schemaUserAdmin =
 	properties:
 		id: UserEntity.properties.id
 		# ----- authority -----
+		# type is always readonly
 		type: ro UserEntity.properties.type
+		# admin can get/set rights
 		rights: UserEntity.properties.rights
+		# admin can block/unblock users
 		blocked: UserEntity.properties.blocked
 		# ----- authentication -----
+		# admin can set initial values to password/salt
 		# TODO: think whether feasible to let only user to change the pass?!
 		password: cr UserEntity.properties.password
 		salt: cr UserEntity.properties.salt
-		# ----- profile -----
+		# ----- public profile -----
+		# admin can read public profile
 		name: ro UserEntity.properties.name
 		email: ro UserEntity.properties.email
-		# ----- profile -----
 		timezone: ro UserEntity.properties.timezone
 		lang: ro UserEntity.properties.lang
+		# ----- private profile -----
+		# admin cannot access private profile
 
 #
 # any user acting on himself
@@ -235,21 +250,25 @@ schemaUserSelf =
 	properties:
 		id: UserEntity.properties.id
 		# ----- authority -----
+		# user can read his authority
 		type: ro UserEntity.properties.type
 		rights: ro UserEntity.properties.rights
 		blocked: ro UserEntity.properties.blocked
 		# ----- authentication -----
+		# user can set his password, but cannot get it
 		password: wo UserEntity.properties.password
 		salt: wo UserEntity.properties.salt
-		secret: UserEntity.properties.secret
-		# ----- profile -----
+		# ----- public profile -----
+		# user can read/change his public profile
 		name: UserEntity.properties.name
 		email: UserEntity.properties.email
-		# ----- profile -----
 		timezone: UserEntity.properties.timezone
 		lang: UserEntity.properties.lang
+		# ----- private profile -----
+		# user can read/change his private profile
+		secret: UserEntity.properties.secret
 
-#schema.Affiliate = schema.Reseller = schema.Merchant = schema.Admin = _.extend schema.User 
+#schema.Affiliate = schema.Reseller = schema.Merchant = schema.Admin = _.extend schema.User
 
 ######################################
 ################### MODEL
@@ -259,13 +278,17 @@ schemaUserSelf =
 for id, def of schema
 	store = Store id
 	model[id] = SecuredStore store, def
-	# TODO: deep freeze the schema
 	Object.defineProperty model[id], 'schema', value: def
+	_.freeze model[id]
 
 # User entity
-User = Store 'User'
-UserSelf = SecuredStore User, schemaUserSelf
-UserAdmin = SecuredStore User, schemaUserAdmin
+UserStore = Store 'User'
+# facet to fetch the whole User objects
+UserAsIs = SecuredStore UserStore
+# facet to get/set user's profile
+UserSelf = SecuredStore UserStore, schemaUserSelf
+# facet to get/set user authority
+UserAdmin = SecuredStore UserStore, schemaUserAdmin
 
 #
 # nonce
@@ -296,7 +319,7 @@ for own k, v of roots
 	v.salt = nonce()
 	v.password = encryptPassword v.password, v.salt
 
-	
+
 # TODO: add "owned" conditions === .eq('_meta.history.0.who',@user.id) unless root
 model.User =
 
@@ -310,11 +333,43 @@ model.User =
 		else
 			(if isSelf then UserSelf else UserAdmin).get.call @, id, next
 
-	#getProfile: (next) ->
-	#	model.User.get @user?.id, next
-
 	query: (query, next) ->
 		UserAdmin.query.call @, query, next
+
+	add: (data, next) ->
+		data ?= {}
+		self = @
+		console.log 'SIGNUP BY', data, @user
+		Step(
+			() ->
+				roots[data.id] or null
+			(err, user) ->
+				console.log 'USER', user, data
+				return @ err if err
+				return @ 'Duplicated' if user
+				# create salt, hash salty password
+				salt = nonce()
+				# generate random pass unless one is specified
+				data.password = nonce().substring(0, 7) unless data.password
+				password = encryptPassword data.password, salt
+				UserAdmin.add.call self, {
+					id: data.id
+					password: password
+					salt: salt
+					#name: data.name
+					#email: data.email
+					type: data.type
+				}, @
+			(err, user) ->
+				console.log 'ADDUSER', arguments
+				return next err if err
+				console.log 'NEWUSER', user
+				# TODO: password set, notify the user, if email is set
+				console.log 'PASSWORD SET TO', data.password
+				#if user.email
+				#	mail user.email, 'Password set', data.password
+				next null, user
+		)
 
 	update: (query, changes, next) ->
 		self = @
@@ -353,40 +408,14 @@ model.User =
 		# forbid self-removal
 		UserAdmin.remove.call @, _.rql(query).ne('id', @user.id), next
 
-	add: (data, next) ->
-		data ?= {}
-		self = @
-		console.log 'SIGNUP BY', data, @user
-		Step(
-			() ->
-				roots[data.id] or null
-			(err, user) ->
-				console.log 'USER', user, data
-				return @ err if err
-				return @ 'Duplicated' if user
-				# create salt, hash salty password
-				salt = nonce()
-				# generate random pass unless one is specified
-				data.password = nonce().substring(0, 7) unless data.password
-				password = encryptPassword data.password, salt
-				UserAdmin.add.call self, {
-					id: data.id
-					password: password
-					salt: salt
-					#name: data.name
-					#email: data.email
-					type: data.type
-				}, @
-			(err, user) ->
-				console.log 'ADDUSER', arguments
-				return next err if err
-				console.log 'NEWUSER', user
-				# TODO: password set, notify the user, if email is set
-				console.log 'PASSWORD SET TO', data.password
-				#if user.email
-				#	mail user.email, 'Password set', data.password
-				next null, user
-		)
+	#
+	# profile getter/setter
+	#
+	# FIXME: needed?
+	getProfile: (next) ->
+		UserSelf.get.call @, @user?.id, next
+	setProfile: (changes, next) ->
+		UserSelf.update.call @, [@user?.id], changes, next
 
 	#
 	# try to login the user by credentials in data.user/data.pass
@@ -401,7 +430,7 @@ model.User =
 				if roots[id]
 					return _.clone roots[id]
 				else
-					User.get id, @
+					UserAsIs.get id, @
 			(err, user) ->
 				#console.log 'GOTUSER!', user
 				if not user
@@ -414,7 +443,7 @@ model.User =
 						#console.log 'LOGOUT'
 						true
 				else
-					if not user.password or not user.active
+					if not user.password or user.blocked
 						# not been activated
 						#console.log 'INACTIVE'
 						false
@@ -444,10 +473,7 @@ model.User =
 			() ->
 				if not uid or roots[uid]
 					return _.clone roots[uid]
-				else if User
-					User.get id, @
-				else
-					null
+				UserAsIs.get id, @
 			(err, user) ->
 				user ?= {}
 				# config.server.disabled disables guest or vanilla user interface
@@ -462,11 +488,11 @@ model.User =
 					level = 'user'
 				else
 					level = 'public'
-				level = [level] unless Array.isArray level
+				level = [level] unless _.isArray level
 				# collect capabilities
-				context = Compose.create.apply null, [{foo: 'bar'}].concat(level.map (x) -> facets[x])
+				context = _.extend.apply null, [{}].concat(level.map (x) -> facets[x])
 				# mixin the user
-				Object.defineProperty context, 'user', value: user
+				Object.defineProperty context, 'user', value: _.freeze user
 				#console.log 'EFFECTIVE FACET', level, context
 				next null, context
 		)
@@ -488,14 +514,14 @@ _.each {affiliate: 'Affiliate', merchant: 'Merchant', admin: 'Admin'}, (name, ty
 			model.User.get.call @, id, (err, result) ->
 				result = null unless result?.type is type
 				next err, result
-	# TODO: deep freeze the schema
 	Object.defineProperty model[name], 'schema', value: schemaUserAdmin
+	_.freeze model[name]
 
 ######################################
 ################### FACETS
 ######################################
 
-FacetForGuest = Compose.create {}, {
+FacetForGuest = _.freeze _.extend {}, {
 	getRoot: (query, next) ->
 		s = {}
 		#console.log 'ROOT', @
@@ -509,6 +535,7 @@ FacetForGuest = Compose.create {}, {
 					methods: _.functions v
 		user = @user
 		next null,
+			# expose the bare minimum
 			user:
 				id: user.id
 				email: user.email
@@ -518,11 +545,16 @@ FacetForGuest = Compose.create {}, {
 }
 
 # user -- authenticated authority
-FacetForUser = Compose.create FacetForGuest, {
+FacetForUser = _.freeze _.extend {}, FacetForGuest, {
+	#Profile:
+	#	get: model.User.getProfile
+	#	set: model.User.setProfile
+	getProfile: model.User.getProfile
+	setProfile: model.User.setProfile
 }
 
 # root -- hardcoded DB owner
-FacetForRoot = Compose.create FacetForUser, {
+FacetForRoot = _.freeze _.extend {}, FacetForUser, {
 	Affiliate: PermissiveFacet model.Affiliate
 	Merchant: PermissiveFacet model.Merchant
 	Admin: PermissiveFacet model.Admin
@@ -535,15 +567,16 @@ FacetForRoot = Compose.create FacetForUser, {
 	#Course: PermissiveFacet model.Course, 'fetch'
 }
 
-FacetForAffiliate = Compose.create FacetForUser, {
-	#Affiliate: FacetForRoot.Affiliate
+FacetForAffiliate = _.freeze _.extend {}, FacetForUser, {
+	# TODO: owned affiliates only
+	Affiliate: FacetForRoot.Affiliate
 }
 
-FacetForMerchant = Compose.create FacetForUser, {
+FacetForMerchant = _.freeze _.extend {}, FacetForUser, {
 }
 
 # admin -- powerful user
-FacetForAdmin = Compose.create FacetForUser, {
+FacetForAdmin = _.freeze _.extend {}, FacetForUser, {
 	Affiliate: FacetForRoot.Affiliate
 	Merchant: FacetForRoot.Merchant
 	Admin: FacetForRoot.Admin
