@@ -105,8 +105,8 @@ RPC("/", "login", {user: 'root', pass: '123'}).then(function(data){
 				});
 			});
 		});
-		start();
 	});
+		start();
 });
 
 });

@@ -338,28 +338,27 @@ model.User =
 
 	add: (data, next) ->
 		data ?= {}
-		self = @
 		console.log 'SIGNUP BY', data, @user
-		Step(
-			() ->
-				roots[data.id] or null
-			(err, user) ->
+		Next @,
+			(err, xxx, step) ->
+				step null, (roots[data.id] or null)
+			(err, user, step) ->
 				console.log 'USER', user, data
-				return @ err if err
-				return @ 'Duplicated' if user
+				return step err if err
+				return step 'Duplicated' if user
 				# create salt, hash salty password
 				salt = nonce()
 				# generate random pass unless one is specified
 				data.password = nonce().substring(0, 7) unless data.password
 				password = encryptPassword data.password, salt
-				UserAdmin.add.call self, {
+				UserAdmin.add.call @, {
 					id: data.id
 					password: password
 					salt: salt
 					#name: data.name
 					#email: data.email
 					type: data.type
-				}, @
+				}, step
 			(err, user) ->
 				console.log 'ADDUSER', arguments
 				return next err if err
@@ -369,40 +368,37 @@ model.User =
 				#if user.email
 				#	mail user.email, 'Password set', data.password
 				next null, user
-		)
 
 	update: (query, changes, next) ->
-		self = @
 		plainPassword = undefined
 		#console.log 'UPDATE', query
 		#
 		# TODO: validate changes.rights to not contain more than self.rights
 		#
-		Step(
+		Next @,
 			# act as profile manager upon own record
-			() ->
+			(err, xxx, step) ->
 				profileChanges = _.clone changes
 				# password is special
 				if profileChanges.password
 					plainPassword = String profileChanges.password
 					profileChanges.salt = nonce()
-					console.log 'PASSWORD SET TO', profileChanges.password, self.user.id
+					console.log 'PASSWORD SET TO', profileChanges.password, @user.id
 					profileChanges.password = encryptPassword plainPassword, profileChanges.salt
 				console.log 'SELFCHANGE', profileChanges
 				#console.log 'UPDATE1', query
-				UserSelf.update.call self, _.rql(query).eq('id', self.user.id), profileChanges, @
+				UserSelf.update.call @, _.rql(query).eq('id', self.user.id), profileChanges, step
 				#console.log 'UPDATE2', query
 			# act as admin upon other records
-			(err) ->
+			(err, xxx, step) ->
 				console.log 'OTHERCHANGE', changes
 				#console.log 'UPDATE', query
-				UserAdmin.update.call self, _.rql(query).ne('id', self.user.id), changes, @
+				UserAdmin.update.call @, _.rql(query).ne('id', self.user.id), changes, step
 			(err) ->
-				if plainPassword and self.user.email
+				if plainPassword and @user.email
 					console.log 'PASSWORD SET TO', plainPassword
-					#	mail self.user.email, 'Password set', plainPassword
+					#	mail @user.email, 'Password set', plainPassword
 				next err
-		)
 
 	remove: (query, next) ->
 		# forbid self-removal
@@ -422,63 +418,71 @@ model.User =
 	# try to login the user by credentials in data.user/data.pass
 	#
 	login: (data, next) ->
-		self = @
-		Step(
-			() ->
+		Next @,
+			(err, xxx, step) ->
 				data ?= {}
 				id = data.user
-				return null unless id
+				return step() unless id
 				if roots[id]
-					return _.clone roots[id]
+					step null, _.clone roots[id]
 				else
-					UserAsIs.get.call self, id, @
-					return
-			(err, user) ->
-				#console.log 'GOTUSER!', user
+					UserAsIs.get.call @, id, step
+			(err, user, step) ->
+				console.log 'GOTUSER!', err, user
 				if not user
 					if data.user
 						# invalid user
 						console.log 'BAD'
-						false
+						r = false
 					else
 						# log out
 						console.log 'LOGOUT'
-						true
+						r = true
 				else
 					if not user.password or user.blocked
 						# not been activated
 						console.log 'INACTIVE'
-						false
+						r = false
 					else if user.password is encryptPassword data.pass, user.salt
 						# log in
 						console.log 'LOGIN'
 						session =
 							uid: user.id
 						session.expires = new Date(15*24*60*60*1000 + Date.now()) if data.remember
-						session
+						r = session
 					else
 						console.log 'WRONG'
-						false
+						r = false
+				step null, r
 			(err, session) ->
 				# save session
 				session = false if err
 				#if session and session isnt true
 				# TODO: log attempts?
-				self.remember session, next
-		)
+				@remember session, next
 
 	#
 	# return capability object given user id
 	#
 	getContext: (uid, next) ->
-		self = @
-		Step(
-			() ->
+		Next @,
+			(err, xxx, step) ->
 				if not uid or roots[uid]
-					return _.clone roots[uid]
-				UserAsIs.get.call self, uid, @
-				return
-			(err, user) ->
+					return step null, _.clone roots[uid]
+				#UserAsIs.get.call self, uid, @
+				#return
+				user =
+					active: true
+					blocked: false
+					lang: 'en'
+					password: '8a84da23682308c99dcc7cf6f225fe5daab28801'
+					rights: 'reseller'
+					salt: '1ix6keqf58fo904exr41i'
+					timezone: 'UTC+04'
+					type: 'affiliate'
+					id: '7879704879596829'
+				step null, user
+			(err, user, step) ->
 				user ?= {}
 				console.log 'USER', uid, user
 				# config.server.disabled disables guest or vanilla user interface
@@ -500,7 +504,6 @@ model.User =
 				Object.defineProperty context, 'user', value: _.freeze user
 				console.log 'EFFECTIVE FACET', level, context
 				next null, context
-		)
 
 # User types
 _.each {affiliate: 'Affiliate', merchant: 'Merchant', admin: 'Admin'}, (name, type) ->
