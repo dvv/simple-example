@@ -413,6 +413,7 @@ model.User =
 	#
 	# FIXME: needed?
 	getProfile: (next) ->
+		console.log 'GETPROFILE for', @user?.id
 		UserSelf.get.call @, @user?.id, next
 	setProfile: (changes, next) ->
 		UserSelf.update.call @, [@user?.id], changes, next
@@ -430,32 +431,33 @@ model.User =
 				if roots[id]
 					return _.clone roots[id]
 				else
-					UserAsIs.get id, @
+					UserAsIs.get.call self, id, @
+					return
 			(err, user) ->
 				#console.log 'GOTUSER!', user
 				if not user
 					if data.user
 						# invalid user
-						#console.log 'BAD'
+						console.log 'BAD'
 						false
 					else
 						# log out
-						#console.log 'LOGOUT'
+						console.log 'LOGOUT'
 						true
 				else
 					if not user.password or user.blocked
 						# not been activated
-						#console.log 'INACTIVE'
+						console.log 'INACTIVE'
 						false
 					else if user.password is encryptPassword data.pass, user.salt
 						# log in
-						#console.log 'LOGIN'
+						console.log 'LOGIN'
 						session =
 							uid: user.id
 						session.expires = new Date(15*24*60*60*1000 + Date.now()) if data.remember
 						session
 					else
-						#console.log 'WRONG'
+						console.log 'WRONG'
 						false
 			(err, session) ->
 				# save session
@@ -469,13 +471,16 @@ model.User =
 	# return capability object given user id
 	#
 	getContext: (uid, next) ->
+		self = @
 		Step(
 			() ->
 				if not uid or roots[uid]
 					return _.clone roots[uid]
-				UserAsIs.get id, @
+				UserAsIs.get.call self, uid, @
+				return
 			(err, user) ->
 				user ?= {}
+				console.log 'USER', uid, user
 				# config.server.disabled disables guest or vanilla user interface
 				# TODO: watchFile ./down to control config.server.disabled
 				if config.server.disabled and not roots[user.id]
@@ -493,7 +498,7 @@ model.User =
 				context = _.extend.apply null, [{}].concat(level.map (x) -> facets[x])
 				# mixin the user
 				Object.defineProperty context, 'user', value: _.freeze user
-				#console.log 'EFFECTIVE FACET', level, context
+				console.log 'EFFECTIVE FACET', level, context
 				next null, context
 		)
 
@@ -541,6 +546,7 @@ FacetForGuest = _.freeze _.extend {}, {
 				email: user.email
 				type: user.type
 			schema: s
+			#context: @
 	login: model.User.login
 }
 

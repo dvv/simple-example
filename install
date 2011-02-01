@@ -8,8 +8,11 @@ creationix/stack/stack.js:stack.js
 creationix/simple-mime/simple-mime.js:mime.js
 documentcloud/underscore/underscore.js:underscore.js
 documentcloud/underscore/underscore.js:../js/underscore.js
+documentcloud/underscore/underscore.js:../../public/test/underscore.js
+jquery/qunit/qunit:../../public/test/qunit
 edtsech/underscore.string/lib/underscore.string.js:underscore.string.js
 edtsech/underscore.string/lib/underscore.string.js:../js/underscore.string.js
+edtsech/underscore.string/lib/underscore.string.js:../../public/test/underscore.string.js
 Modernizr/Modernizr/modernizr.js:../../public/js/modernizr.js
 douglascrockford/JSON-js/json2.js:../js/json2.js
 #
@@ -33,6 +36,8 @@ jed/cookie-node/index.js:cookie.js
 weaver/node-mail/lib/mail:mail
 miksago/node-websocket-server/lib:ws-server
 learnboost/socket.io-node:io
+#
+#
 '
 
 # download dependencies
