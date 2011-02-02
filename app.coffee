@@ -338,7 +338,7 @@ model.User =
 
 	add: (data, next) ->
 		data ?= {}
-		console.log 'SIGNUP BY', data, @user
+		#console.log 'SIGNUP BY', data, @user
 		Next @,
 			(err, xxx, step) ->
 				step null, (roots[data.id] or null)
@@ -360,9 +360,9 @@ model.User =
 					type: data.type
 				}, step
 			(err, user) ->
-				console.log 'ADDUSER', arguments
+				#console.log 'ADDUSER', arguments
 				return next err if err
-				console.log 'NEWUSER', user
+				#console.log 'NEWUSER', user
 				# TODO: password set, notify the user, if email is set
 				console.log 'PASSWORD SET TO', data.password
 				#if user.email
@@ -385,13 +385,13 @@ model.User =
 					profileChanges.salt = nonce()
 					console.log 'PASSWORD SET TO', profileChanges.password, @user.id
 					profileChanges.password = encryptPassword plainPassword, profileChanges.salt
-				console.log 'SELFCHANGE', profileChanges
+				#console.log 'SELFCHANGE', profileChanges
 				#console.log 'UPDATE1', query
 				UserSelf.update.call @, _.rql(query).eq('id', @user.id), profileChanges, step
 				#console.log 'UPDATE2', query
 			# act as admin upon other records
 			(err, xxx, step) ->
-				console.log 'OTHERCHANGE', changes
+				#console.log 'OTHERCHANGE', changes
 				#console.log 'UPDATE', query
 				UserAdmin.update.call @, _.rql(query).ne('id', @user.id), changes, step
 			(err) ->
@@ -409,7 +409,7 @@ model.User =
 	#
 	# FIXME: needed?
 	getProfile: (next) ->
-		console.log 'GETPROFILE for', @user?.id
+		#console.log 'GETPROFILE for', @user?.id
 		UserSelf.get.call @, @user?.id, next
 	setProfile: (changes, next) ->
 		UserSelf.update.call @, [@user?.id], changes, next
@@ -428,36 +428,30 @@ model.User =
 				else
 					UserAsIs.get.call @, id, step
 			(err, user, step) ->
-				console.log 'GOTUSER!', err, user
+				#console.log 'GOTUSER!', err, user
 				if not user
 					if data.user
 						# invalid user
-						console.log 'BAD'
-						r = false
+						step 'Invalid user'
 					else
 						# log out
-						console.log 'LOGOUT'
-						r = true
+						step null, true
 				else
 					if not user.password or user.blocked
 						# not been activated
-						console.log 'INACTIVE'
-						r = false
+						step 'Invalid user'
 					else if user.password is encryptPassword data.pass, user.salt
 						# log in
-						console.log 'LOGIN'
 						session =
 							uid: user.id
 						session.expires = new Date(15*24*60*60*1000 + Date.now()) if data.remember
-						r = session
+						step null, session
 					else
-						console.log 'WRONG'
-						r = false
-				step null, r
+						#console.log 'WRONG'
+						step 'Invalid user'
 			(err, session) ->
 				# save session
-				session = false if err
-				#if session and session isnt true
+				session = err or session
 				# TODO: log attempts?
 				@remember session, next
 
@@ -468,23 +462,12 @@ model.User =
 		Next @,
 			(err, xxx, step) ->
 				if not uid or roots[uid]
-					return step null, _.clone roots[uid]
-				#UserAsIs.get.call self, uid, @
-				#return
-				user =
-					active: true
-					blocked: false
-					lang: 'en'
-					password: '8a84da23682308c99dcc7cf6f225fe5daab28801'
-					rights: 'reseller'
-					salt: '1ix6keqf58fo904exr41i'
-					timezone: 'UTC+04'
-					type: 'affiliate'
-					id: '7879704879596829'
-				step null, user
+					step null, _.clone roots[uid]
+				else
+					UserAsIs.get.call @, uid, step
 			(err, user, step) ->
 				user ?= {}
-				console.log 'USER', uid, user
+				#console.log 'USER', uid, user
 				# config.server.disabled disables guest or vanilla user interface
 				# TODO: watchFile ./down to control config.server.disabled
 				if config.server.disabled and not roots[user.id]
@@ -502,7 +485,7 @@ model.User =
 				context = _.extend.apply null, [{}].concat(level.map (x) -> facets[x])
 				# mixin the user
 				Object.defineProperty context, 'user', value: _.freeze user
-				console.log 'EFFECTIVE FACET', level, context
+				#console.log 'EFFECTIVE FACET', level, context
 				next null, context
 
 # User types

@@ -1,6 +1,9 @@
 #!/usr/bin/env coffee
 'use strict'
 
+console.log process.argv
+process.exit 0
+
 require.paths.unshift __dirname + '/lib/node'
 
 sys = require 'util'

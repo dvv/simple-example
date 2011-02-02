@@ -1,10 +1,6 @@
 #!/usr/local/bin/coffee
 'use strict'
 
-# FIXME: coffee workaround
-process.argv[0] = process.argv[1]
-process.argv[1] = __filename
-
 require.paths.unshift __dirname + '/lib/node'
 
 #############################
@@ -37,6 +33,9 @@ handler = require('stack')(
 	#	get: (req, res, next) -> res.send 'GETFOO1'
 	#	post: (req, res, next) -> res.send 'POSTFOO1'
 
+	simple.handlers.jsonBody
+		maxLength: 0 # set to >0 to limit the number of bytes
+
 	#simple.handlers.body
 	#	uploadDir: config.upload.dir
 
@@ -47,9 +46,6 @@ handler = require('stack')(
 
 	#simple.handlers.mount 'GET', '/home', (req, res, next) ->
 	#	res.send 'FOO'
-
-	#simple.handlers.jsonBody
-	#	maxLength: 0 # set to >0 to limit the number of bytes
 
 	simple.handlers.logRequest()
 

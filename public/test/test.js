@@ -26,6 +26,7 @@ function checkRPCError(response){
 	ok(response.result === undefined, "RPC shouldn't have given result"); ok(response.error !== undefined, "RPC should have given error");
 }
 
+function testUser(type, url){
 asyncTest("getRoot()", function() {
 
 RPC("/", "login", {user: 'root', pass: '123'}).then(function(data){
@@ -42,32 +43,32 @@ RPC("/", "login", {user: 'root', pass: '123'}).then(function(data){
 			ok(obj.schema, "We got schema");
 			ok(obj.schema.login && obj.schema.getRoot && obj.schema.getProfile && obj.schema.setProfile, "We got profile getter/setter");
 		});
-		module("Affiliate");
+		module(url);
 		var id = String(Math.random()).substring(2);
 		var password = String(Math.random()).substring(2);
-		var user = {id: id, type: 'affiliate', rights: '', blocked: false, timezone: 'UTC+04', lang: 'en'};
-		RPC("/Affiliate", "add", {id: id, password: password}).then(function(response){
+		var user = {id: id, type: type, rights: '', blocked: false, timezone: 'UTC+04', lang: 'en'};
+		RPC(url, "add", {id: id, password: password}).then(function(response){
 			var obj = response.result;
 			test("Create", function(){
 				checkRPC(response);
 				//console.log('AFF', obj);
 				deepEqual(user, obj, "Created");
 			});
-			RPC("/Affiliate", "get", [id]).then(function(response){
+			RPC(url, "get", [id]).then(function(response){
 				var obj = response.result;
 				test("Get", function(){
 					checkRPC(response);
 					//console.log('AFF', obj);
 					deepEqual(user, obj, "Fetched");
 				});
-				RPC("/Affiliate", "update", [[id], {blocked: true, rights: "reseller", lang: 'chti'}]).then(function(response){
+				RPC(url, "update", [[id], {blocked: true, rights: "reseller", lang: 'chti', type: 'superuser'}]).then(function(response){
 					var obj = response.result;
 					test("Update :: blocked: true, lang: 'chti'", function(){
 						checkRPC(response);
 						//console.log('AFF', obj);
 						strictEqual(true, obj, "Updated");
 					});
-					RPC("/Affiliate", "query", ['']).then(function(response){
+					RPC(url, "query", ['']).then(function(response){
 						var obj = response.result;
 						test("Query", function(){
 							checkRPC(response);
@@ -76,7 +77,7 @@ RPC("/", "login", {user: 'root', pass: '123'}).then(function(data){
 							window.users = obj;
 							window.user = user;
 							deepEqual(user, _.detect(users,function(x){return x.id === user.id;}), "Queried, user included");
-							ok(_.detect(users,function(x){return x.type === 'affiliate' && x.blocked && x.lang === 'en' && x.rights === 'reseller';}), "Checked bulk update");
+							ok(_.detect(users,function(x){return x.type === type && x.blocked && x.lang === 'en' && x.rights === 'reseller';}), "Checked bulk update");
 						});
 						RPC("/", "getProfile", []).then(function(response){
 							var obj = response.result;
@@ -86,7 +87,7 @@ RPC("/", "login", {user: 'root', pass: '123'}).then(function(data){
 							});
 							module('User');
 							// unblock the user
-							RPC("/Affiliate", "update", [[id], {blocked: false}]).then(function(response){
+							RPC(url, "update", [[id], {blocked: false}]).then(function(response){
 								var obj = response.result;
 								test("Update :: blocked: false", function(){
 									checkRPC(response);
@@ -96,7 +97,32 @@ RPC("/", "login", {user: 'root', pass: '123'}).then(function(data){
 									test("Login", function(){
 										checkRPC(response);
 										//console.log('AFF', obj);
-										//deepEqual([user], obj, "Queried");
+									});
+									RPC("/", "getProfile", []).then(function(response){
+										var obj = response.result;
+										test("get profile", function(){
+											checkRPC(response);
+											//console.log('AFF', obj);
+										});
+RPC(url, "update", [[id], {blocked: true, rights: 'superuser', secret: 'secretfor'+id}]).then(function(response){
+	var obj = response.result;
+	test("Update as user -- should touch only profile", function(){
+		if (type === 'affiliate') {
+			checkRPC(response);
+			RPC("/", "getProfile", []).then(function(response){
+				var obj = response.result;
+				test("get profile", function(){
+					checkRPC(response);
+					console.log('AFF', obj);
+					_.extend(user, {secret: 'secretfor'+id});
+					deepEqual(user, obj, "Updated, only secret should change");
+				});
+			});
+		} else {
+			checkRPCError(response);
+		}
+	});
+});
 									});
 								});
 							});
@@ -110,3 +136,8 @@ RPC("/", "login", {user: 'root', pass: '123'}).then(function(data){
 });
 
 });
+
+}
+
+//testUser('affiliate', '/Affiliate');
+testUser('merchant', '/Merchant');
