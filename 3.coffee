@@ -5,7 +5,6 @@ require.paths.unshift __dirname + '/lib/node'
 
 global._ = require 'underscore'
 
-###
 rql = require('jse/rql').rql
 
 inspect = require('eyes.js').inspector stream: null
@@ -33,3 +32,4 @@ obj = Model obj0, obj1, obj2
 console.log obj, obj.__proto__
 
 require('repl').start 'test>'
+###

@@ -343,7 +343,7 @@ model.User =
 			(err, xxx, step) ->
 				step null, (roots[data.id] or null)
 			(err, user, step) ->
-				console.log 'USER', user, data
+				#console.log 'USER', user, data
 				return step err if err
 				return step 'Duplicated' if user
 				# create salt, hash salty password
@@ -364,9 +364,9 @@ model.User =
 				return next err if err
 				#console.log 'NEWUSER', user
 				# TODO: password set, notify the user, if email is set
-				console.log 'PASSWORD SET TO', data.password
-				#if user.email
-				#	mail user.email, 'Password set', data.password
+				if user.email
+					console.log 'PASSWORD SET TO', data.password
+					#mail user.email, 'Password set', data.password
 				next null, user
 
 	update: (query, changes, next) ->
@@ -383,7 +383,7 @@ model.User =
 				if profileChanges.password
 					plainPassword = String profileChanges.password
 					profileChanges.salt = nonce()
-					console.log 'PASSWORD SET TO', profileChanges.password, @user.id
+					#console.log 'PASSWORD SET TO', profileChanges.password, @user.id
 					profileChanges.password = encryptPassword plainPassword, profileChanges.salt
 				#console.log 'SELFCHANGE', profileChanges
 				#console.log 'UPDATE1', query
@@ -403,6 +403,14 @@ model.User =
 	remove: (query, next) ->
 		# forbid self-removal
 		UserAdmin.remove.call @, _.rql(query).ne('id', @user.id), next
+
+	delete: (query, next) ->
+		# forbid self-removal
+		UserAdmin.delete.call @, _.rql(query).ne('id', @user.id), next
+
+	undelete: (query, next) ->
+		# forbid self-undeletion
+		UserAdmin.undelete.call @, _.rql(query).ne('id', @user.id), next
 
 	#
 	# profile getter/setter
@@ -499,6 +507,10 @@ _.each {affiliate: 'Affiliate', merchant: 'Merchant', admin: 'Admin'}, (name, ty
 			model.User.update.call @, _.rql(query).eq('type',type), changes, next
 		remove: (query, next) ->
 			model.User.remove.call @, _.rql(query).eq('type',type), next
+		delete: (query, next) ->
+			model.User.delete.call @, _.rql(query).eq('type',type), next
+		undelete: (query, next) ->
+			model.User.undelete.call @, _.rql(query).eq('type',type), next
 		query: (query, next) ->
 			model.User.query.call @, _.rql(query).eq('type',type), next
 		get: (id, next) ->
@@ -590,8 +602,8 @@ facets.merchant = FacetForMerchant
 facets.admin = FacetForAdmin
 
 # TODO: remove from global
-global.model = model
-global.facets = facets
+#global.model = model
+#global.facets = facets
 
 #console.log 'FACET', facets
 
