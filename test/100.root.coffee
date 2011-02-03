@@ -61,6 +61,7 @@ module.exports = testCase
 				test.ok _.all result, (x) -> x.type is 'merchant'
 				@[@entity].query.call @, 'select(-type)', next
 			(err, result, next) ->
+				console.log 'Q3', arguments
 				test.ok not err and result.length is 3, 'queried 3 documents, kick out type attribute'
 				test.ok _.all result, (x) -> if x.id in ['a', 'b'] then x.rights is 'whatever' and x.blocked else not x.rights
 				test.ok _.all result, (x) -> not x.name and not x.email
@@ -69,6 +70,7 @@ module.exports = testCase
 				test.ok not err and not result
 				@[@entity].query.call @, 'select(rights)', next
 			(err, result, next) ->
+				console.log 'LAAAAST', arguments
 				test.ok not err and result.length is 2, 'queried 2 documents'
 				test.ok result[0].id in ['b','c'] and result[1].id in ['b','c']
 				test.done()

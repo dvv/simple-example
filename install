@@ -3,7 +3,7 @@
 deps='
 dvv/jse/lib:jse
 cloudhead/eyes.js/lib/eyes.js:eyes.js
-#creationix/step/lib/step.js:step.js
+akidee/step/lib/step.js:step.js
 creationix/stack/stack.js:stack.js
 creationix/simple-mime/simple-mime.js:mime.js
 documentcloud/underscore/underscore.js:underscore.js
@@ -29,7 +29,7 @@ Poetro/node-xml2js-expat/lib/xml2js.js:xml2js.js
 tautologistics/node-htmlparser/lib/htmlparser.js:htmlparser.js
 isaacs/sax-js/lib/sax.js:sax.js
 #
-christkv/node-mongodb-native/lib/mongodb:mongodb
+christkv/node-mongodb-native:mongodb
 dvv/coffee-mongo/lib:mongo
 cloudhead/node-static/lib:static
 jed/cookie-node/index.js:cookie.js
