@@ -145,6 +145,17 @@ schema.Group =
 				type: 'string'
 				enum: (value, next) -> model.Role.get value, (err, result) -> next not result
 
+schema.Hit =
+	type: 'object'
+	additionalProperties: false
+	properties:
+		id:
+			type: 'string'
+			readonly:
+				update: true
+		name:
+			type: 'string'
+
 #
 # User entity
 #
@@ -556,6 +567,7 @@ FacetForGuest = _.freeze _.extend {}, {
 			schema: s
 			#context: @
 	login: model.User.login
+	Hit: PermissiveFacet model.Hit
 }
 
 # user -- authenticated authority
