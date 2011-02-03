@@ -388,6 +388,11 @@ model.User =
 				#console.log 'SELFCHANGE', profileChanges
 				#console.log 'UPDATE1', query
 				UserSelf.update.call @, _.rql(query).eq('id', @user.id), profileChanges, step
+				###
+				if plainPassword and @user.email
+					console.log 'PASSWORD SET TO', plainPassword
+					#	mail @user.email, 'Password set', plainPassword
+				###
 				#console.log 'UPDATE2', query
 			# act as admin upon other records
 			(err, xxx, step) ->
@@ -395,9 +400,6 @@ model.User =
 				#console.log 'UPDATE', query
 				UserAdmin.update.call @, _.rql(query).ne('id', @user.id), changes, step
 			(err) ->
-				if plainPassword and @user.email
-					console.log 'PASSWORD SET TO', plainPassword
-					#	mail @user.email, 'Password set', plainPassword
 				next err
 
 	remove: (query, next) ->
@@ -497,6 +499,7 @@ model.User =
 				next null, context
 
 # User types
+# TODO: Affiliate should impose "owned" restriction also
 _.each {affiliate: 'Affiliate', merchant: 'Merchant', admin: 'Admin'}, (name, type) ->
 	model[name] =
 		add: (data, next) ->
