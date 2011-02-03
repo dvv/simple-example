@@ -233,3 +233,27 @@ module.exports = testCase
 			(err, result, next) ->
 				test.ok not err and result?.id is 'ABA', 'undeleted document ok'
 				test.done()
+
+	testLanguage: (test) ->
+		context.entity = 'Language'
+		Next context,
+			(err, result, next) ->
+				@[@entity].delete.call @, 'dummyfield!=dummyvalue', next
+			(err, result, next) ->
+				test.ok not err and not result, 'deleted ok'
+				@[@entity].query.call @, '', next
+			(err, result, next) ->
+				test.ok not err, 'query ok'
+				test.deepEqual result, [], 'empty recordset'
+				@[@entity].add.call @, {id: 'en', name: 'English', localName: 'English'}, next
+			(err, result, next) ->
+				test.ok not err, 'added ok'
+				test.ok result.id is 'en' and result.name is 'English', 'added ok'
+				@[@entity].add.call @, {id: 'ru', name: 'Russian', localName: 'Русский'}, next
+			(err, result, next) ->
+				test.ok not err, 'added ok'
+				@[@entity].query.call @, 'values(localName)', next
+			(err, result, next) ->
+				test.ok not err and result.length is 2, 'queried 2 documents'
+				test.deepEqual result, [['English', 'en'], ['Русский', 'ru']], 'documents have expected names'
+				test.done()

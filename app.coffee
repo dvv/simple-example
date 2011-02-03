@@ -99,7 +99,7 @@ schema.Country =
 			type: 'string'
 		region:
 			type: 'string'
-			enum: (value, next) -> model.Region.get value, (err, result) -> next err
+			enum: (value, next) -> model.Region.get value, (err, result) -> next not result
 		###
 		#currency: {$ref: 'Currency.properties.id'}
 		iso2:
@@ -143,7 +143,7 @@ schema.Group =
 			type: 'array'
 			items:
 				type: 'string'
-				enum: (value, next) -> model.Role.get value, (err, result) -> next err
+				enum: (value, next) -> model.Role.get value, (err, result) -> next not result
 
 #
 # User entity
@@ -189,7 +189,11 @@ UserEntity =
 			default: 'UTC+04'
 		lang:
 			type: 'string'
-			enum: ['en'] # to be filled with model.Language.all()
+			enum: (value, next) ->
+				#console.log 'LANGENUM?', arguments
+				model.Language.get value, (err, result) ->
+					#console.log 'LANGENUM!', arguments
+					next not result
 			default: 'en'
 		# .....
 
@@ -422,7 +426,10 @@ model.User =
 		#console.log 'GETPROFILE for', @user?.id
 		UserSelf.get.call @, @user?.id, next
 	setProfile: (changes, next) ->
-		UserSelf.update.call @, [@user?.id], changes, next
+		self = @
+		UserSelf.update.call @, [@user?.id], changes, (err, result) ->
+			return next err if err
+			self.getProfile.call self, next
 
 	#
 	# try to login the user by credentials in data.user/data.pass
