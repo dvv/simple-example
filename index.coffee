@@ -20,22 +20,13 @@ All {},
 	#
 	(err, exposed, next) ->
 
-		model = _.freeze exposed
-		console.log 'MODEL', model 
-		###
-					# register permissive facet -- set of entity accessors
-					expose = ['schema', 'id', 'query', 'get', 'add', 'update', 'remove']
-					expose = expose.concat ['delete', 'undelete', 'purge'] if @attrInactive
-					self.facet[name] = _.proxy store, expose
-		###
+		model = exposed
 
 		#
 		# app should provide for .getContext(uid, next) -- the method to retrieve
-		#   capability object for user uid
+		#   capability object for given user uid
 		#
-		app = require('./app') model
-
-		next null, app
+		require('./app') config, model, next
 
 	#
 	# define server

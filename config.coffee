@@ -32,7 +32,7 @@ module.exports =
 
 	database:
 
-		url: 'mongodb://127.0.0.1/simple'
+		url: '' #'mongodb://127.0.0.1/simple'
 		filterBy: 'active'
 		hardLimit: 100
 
