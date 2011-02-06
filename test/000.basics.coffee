@@ -61,6 +61,18 @@ changeID = (name) ->
 		for i in [0...10]
 			assert.deepEqual saved[i], result[i]
 
+blockUser = (name) ->
+	topic: (ctx) ->
+		done = @callback
+		ctx[name].query ctx, 'id=re:e', (err, result) ->
+			saved = result
+			ctx[name].update ctx, 'id=re:e', {blocked: true}, (err, result) ->
+				ctx[name].query ctx, 'blocked=true', (err, result) ->
+					done err, saved: saved, result: result
+	'fetch': (r) ->
+		#console.log 'BLOCKED', r
+		assert.equal r.saved.length, r.result.length
+
 module.exports = (app) ->
 
 	vows = require 'vows'
@@ -183,4 +195,8 @@ module.exports = (app) ->
 				'Currency': changeID 'Currency'
 				'Region': changeID 'Region'
 				'Country': changeID 'Country'
+			'change users blocked':
+				'Admin': blockUser 'Admin'
+				'Affiliate': blockUser 'Affiliate'
+				'Merchant': blockUser 'Merchant'
 	).run () -> console.log 'DONE', arguments

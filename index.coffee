@@ -1,7 +1,7 @@
 #!/usr/local/bin/coffee
 'use strict'
 
-process.argv.shift()
+process.argv.shift() # still report 'node' as argv[0]
 require.paths.unshift __dirname + '/lib/node'
 
 config = require './config'
@@ -65,6 +65,9 @@ All {},
 			#simple.handlers.mount 'POST', '/foo', (req, res, next) ->
 			#	res.send 'FOO'
 
+			simple.handlers.mount 'GET', '/geo', (req, res, next) ->
+				res.send require('fs').readFileSync('./geo/Geo.json')
+
 			simple.handlers.static
 				dir: config.server.static.dir
 				ttl: config.server.static.ttl
@@ -74,7 +77,7 @@ All {},
 		#
 		# run the application
 		#
-		unless process.argv[2] is 'test'
+		unless process.argv[1] is 'test'
 			simple.run handler, config.server
 		else
 			console.log '!!!TESTING MODE!!!'

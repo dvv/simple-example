@@ -42,6 +42,8 @@ caolan/nodeunit:
 visionmedia/should.js:should
 dvv/Faker.js:faker
 #
+roymap/node-maxmind-native/maxmind.js:maxmind.js
+#
 '
 
 # download dependencies

@@ -259,4 +259,13 @@ schema.UserSelf =
 		# user can read/change his private profile
 		secret: UserEntity.properties.secret
 
+#
+# geo data
+#
+schema.Geo =
+	type: 'object'
+	properties:
+		id:
+			type: 'string'
+
 module.exports = schema

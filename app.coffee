@@ -1,5 +1,9 @@
 'use strict'
 
+#
+# Country r/o from geoip, regions from geoip, geo info in user record
+#
+
 module.exports = (config, model, callback) ->
 
 	#console.log 'MODEL', model
@@ -93,7 +97,7 @@ module.exports = (config, model, callback) ->
 					}, step
 				(err, user) ->
 					#console.log 'ADDUSER', arguments
-					return next err if err
+					return next? err if err
 					#console.log 'NEWUSER', user
 					# TODO: password set, notify the user, if email is set
 					if user.email
@@ -218,7 +222,7 @@ module.exports = (config, model, callback) ->
 					else
 						User._get null, @, uid, step
 				(err, user = {}, step) ->
-					#console.log 'USER', uid, user
+					#console.log 'USER', uid, user, user._meta.history
 					# config.server.disabled disables guest or vanilla user interface
 					# TODO: watchFile ./down to control config.server.disabled
 					if config.server.disabled and not roots[user.id]
@@ -245,28 +249,28 @@ module.exports = (config, model, callback) ->
 	#
 	# define User flavors
 	#
-	# TODO: Affiliate should impose "owned" restriction also
+	owned = (context, query) -> if context?.user?.id then _.rql(query).eq('_meta.history.0.who', context?.user?.id) else _.rql(query)
 	_.each {affiliate: 'Affiliate', merchant: 'Merchant', admin: 'Admin'}, (name, type) ->
 		model[name] =
 			query: (context, query, next) ->
-				model.User.query context, _.rql(query).eq('type',type), next
+				model.User.query context, owned(context, query).eq('type',type), next
 			get: (context, id, next) ->
-				model.User.get context, id, (err, result) ->
-					result = null unless result?.type is type
-					next err, result
+				query = owned(context, 'limit(1)').eq('type',type).eq('id',id)
+				model.User.query context, query, (err, result) ->
+					next? err, result[0] or null
 			add: (context, data = {}, next) ->
 				data.type = type
 				model.User.add context, data, next
 			update: (context, query, changes, next) ->
-				model.User.update context, _.rql(query).eq('type',type), changes, next
+				model.User.update context, owned(context, query).eq('type',type), changes, next
 			remove: (context, query, next) ->
-				model.User.remove context, _.rql(query).eq('type',type), next
+				model.User.remove context, owned(context, query).eq('type',type), next
 			delete: (context, query, next) ->
-				model.User.delete context, _.rql(query).eq('type',type), next
+				model.User.delete context, owned(context, query).eq('type',type), next
 			undelete: (context, query, next) ->
-				model.User.undelete context, _.rql(query).eq('type',type), next
+				model.User.undelete context, owned(context, query).eq('type',type), next
 			purge: (context, query, next) ->
-				model.User.purge context, _.rql(query).eq('type',type), next
+				model.User.purge context, owned(context, query).eq('type',type), next
 		#
 		#
 		#
