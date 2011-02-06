@@ -1,0 +1,4 @@
+#!/bin/sh
+
+node-inspector &
+coffee --nodejs debug 000.basics.coffee

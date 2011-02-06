@@ -29,7 +29,7 @@ Poetro/node-xml2js-expat/lib/xml2js.js:xml2js.js
 tautologistics/node-htmlparser/lib/htmlparser.js:htmlparser.js
 isaacs/sax-js/lib/sax.js:sax.js
 #
-christkv/node-mongodb-native:mongodb
+dvv/node-mongodb-native:mongodb
 dvv/coffee-mongo/lib:mongo
 cloudhead/node-static/lib:static
 jed/cookie-node/index.js:cookie.js
@@ -39,6 +39,8 @@ miksago/node-websocket-server/lib:ws-server
 learnboost/socket.io-node:io
 #
 caolan/nodeunit:
+visionmedia/should.js:should
+dvv/Faker.js:faker
 #
 '
 

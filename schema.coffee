@@ -95,9 +95,9 @@ schema.Country =
 				update: true
 		name:
 			type: 'string'
-		region:
-			type: 'string'
-			enum: (value, next) -> model.Region.get value, (err, result) -> next not result
+		region: _.extend({}, schema.Region.properties.id,
+			enum: (value, next) -> next null #@Region.get value, (err, result) -> next not result
+		)
 		###
 		#currency: {$ref: 'Currency.properties.id'}
 		iso2:
@@ -139,9 +139,9 @@ schema.Group =
 			type: 'string'
 		roles:
 			type: 'array'
-			items:
-				type: 'string'
-				enum: (value, next) -> model.Role.get value, (err, result) -> next not result
+			items: _.extend({}, schema.Role.properties.id,
+				enum: (value, next) -> @Role.get value, (err, result) -> next not result
+			)
 
 schema.Hit =
 	type: 'object'
@@ -196,20 +196,16 @@ UserEntity =
 			type: 'string'
 			enum: ['UTC-11', 'UTC-10', 'UTC-09', 'UTC-08', 'UTC-07', 'UTC-06', 'UTC-05', 'UTC-04', 'UTC-03', 'UTC-02', 'UTC-01', 'UTC+00', 'UTC+01', 'UTC+02', 'UTC+03', 'UTC+04', 'UTC+05', 'UTC+06', 'UTC+07', 'UTC+08', 'UTC+09', 'UTC+10', 'UTC+11', 'UTC+12']
 			default: 'UTC+04'
-		lang:
-			type: 'string'
-			enum: (value, next) ->
-				#console.log 'LANGENUM?', arguments
-				model.Language.get value, (err, result) ->
-					#console.log 'LANGENUM!', arguments
-					next not result
+		lang: _.extend({}, schema.Language.properties.id,
+			enum: (value, next) -> next null #@Language.get value, (err, result) -> next not result
 			default: config.defaults.nls
+		)
 		# .....
 
 #
 # admin acting on other users
 #
-schema.UserAdmin =
+schema.User =
 	type: 'object'
 	properties:
 		id: UserEntity.properties.id
@@ -262,7 +258,5 @@ schema.UserSelf =
 		# ----- private profile -----
 		# user can read/change his private profile
 		secret: UserEntity.properties.secret
-
-#schema.Affiliate = schema.Reseller = schema.Merchant = schema.Admin = _.extend schema.User
 
 module.exports = schema

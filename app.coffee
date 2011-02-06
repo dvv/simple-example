@@ -39,7 +39,12 @@ module.exports = (config, model, callback) ->
 	################### USER
 	######################################
 
+	#
+	# N.B. we redefine User accessors to honor acting on self
+	#
+
 	# TODO: add "owned" conditions === .eq('_meta.history.0.who',@user.id) unless root
+	User = model.User
 	model.User =
 
 		get: (context, id, next) ->
@@ -53,15 +58,20 @@ module.exports = (config, model, callback) ->
 					email: user.email
 				next? null, profile
 			else
-				(if isSelf then model.UserSelf else model.UserAdmin).get context, id, next
+				if isSelf
+					User._get model.UserSelf.schema, context, id, next
+				else
+					User.get context, id, next
 			return
 
 		query: (context, query, next) ->
-			model.UserAdmin.query context, query, next
-			return
+			User.query context, query, next
 
-		add: (context, data, next) ->
-			data ?= {}
+		# N.B. ensure new user doesn't clash root
+		#
+		# FIXME: shouldn't root be the one and login completely different?!
+		#
+		add: (context, data = {}, next) ->
 			#console.log 'SIGNUP BY', data, context.user
 			Next context,
 				(err, result, step) ->
@@ -75,7 +85,7 @@ module.exports = (config, model, callback) ->
 					# generate random pass unless one is specified
 					data.password = nonce().substring(0, 7) unless data.password
 					password = encryptPassword data.password, salt
-					model.UserAdmin.add context, {
+					User.add context, {
 						id: data.id
 						password: password
 						salt: salt
@@ -110,7 +120,7 @@ module.exports = (config, model, callback) ->
 						profileChanges.password = encryptPassword plainPassword, profileChanges.salt
 					#console.log 'SELFCHANGE', profileChanges
 					#console.log 'UPDATE1', query
-					model.UserSelf.update context, _.rql(query).eq('id',context.user.id), profileChanges, step
+					User._update model.UserSelf.schema, context, _.rql(query).eq('id',context.user.id), profileChanges, step
 					###
 					if plainPassword and @user.email
 						console.log 'PASSWORD SET TO', plainPassword
@@ -121,29 +131,29 @@ module.exports = (config, model, callback) ->
 				(err, result, step) ->
 					#console.log 'OTHERCHANGE', changes
 					#console.log 'UPDATE', query
-					model.UserAdmin.update context, _.rql(query).ne('id',context.user.id), changes, step
+					User.update context, _.rql(query).ne('id',context.user.id), changes, step
 				(err) ->
 					next? err
 			return
 
 		remove: (context, query, next) ->
 			# forbid self-removal
-			model.UserAdmin.remove context, _.rql(query).ne('id',context.user.id), next
+			User.remove context, _.rql(query).ne('id',context.user.id), next
 			return
 
 		delete: (context, query, next) ->
 			# forbid self-removal
-			model.UserAdmin.delete context, _.rql(query).ne('id',context.user.id), next
+			User.delete context, _.rql(query).ne('id',context.user.id), next
 			return
 
 		undelete: (context, query, next) ->
 			# forbid self-undeletion
-			model.UserAdmin.undelete context, _.rql(query).ne('id',context.user.id), next
+			User.undelete context, _.rql(query).ne('id',context.user.id), next
 			return
 
 		purge: (context, query, next) ->
 			# forbid self-deletion
-			model.UserAdmin.purge context, _.rql(query).ne('id',context.user.id), next
+			User.purge context, _.rql(query).ne('id',context.user.id), next
 			return
 
 		#
@@ -152,36 +162,31 @@ module.exports = (config, model, callback) ->
 		# FIXME: needed?
 		getProfile: (context, next) ->
 			#console.log 'GETPROFILE for', context.user?.id
-			model.UserSelf.get context, context.user?.id, next
+			User._get model.UserSelf.schema, context, context.user?.id, next
 			return
 		setProfile: (context, changes, next) ->
-			model.UserSelf.update context, [context.user?.id], changes, (err, result) ->
+			User._update model.UserSelf.schema, context, [context.user?.id], changes, (err, result) ->
 				return next? err if err
 				model.User.getProfile context, next
 			return
 
 		#
-		# try to login the user by credentials in data.user/data.pass
+		# verify credentials in data.user/data.pass
 		#
-		login: (context, data, next) ->
-			Next @,
-				(err, xxx, step) ->
-					data ?= {}
-					id = data.user
-					return step() unless id
-					if roots[id]
-						step null, _.clone roots[id]
-					else
-						model.User._get null, @, id, step
-				(err, user, step) ->
-					#console.log 'GOTUSER!', err, user
-					if not user
+		verify: (data = {}, next) ->
+			Next null,
+				(err, result, step) ->
+					model.User.getContext data.user, step
+				(err, context, step) ->
+					user = context.user
+					#console.log 'GOTUSER!', user
+					if not user.id
 						if data.user
 							# invalid user
 							step 'Invalid user'
 						else
 							# log out
-							step null, true
+							step()
 					else
 						if not user.password or user.blocked
 							# not been activated
@@ -195,12 +200,9 @@ module.exports = (config, model, callback) ->
 						else
 							#console.log 'WRONG'
 							step 'Invalid user'
-				(err, session) ->
-					# save session
-					session = err or session
-					# TODO: log attempts?
-					@remember session, next
-			return
+				(err, session, step) ->
+					#console.log 'GOTSESSION!', arguments
+					next err, session
 
 		#
 		# return capability object given user id
@@ -214,9 +216,8 @@ module.exports = (config, model, callback) ->
 					if not uid or roots[uid]
 						step null, _.clone roots[uid]
 					else
-						model.User._get null, @, uid, step
-				(err, user, step) ->
-					user ?= {}
+						User._get null, @, uid, step
+				(err, user = {}, step) ->
 					#console.log 'USER', uid, user
 					# config.server.disabled disables guest or vanilla user interface
 					# TODO: watchFile ./down to control config.server.disabled
@@ -234,9 +235,11 @@ module.exports = (config, model, callback) ->
 					# collect capabilities
 					context = _.extend.apply null, [{}].concat(level.map (x) -> facets[x])
 					# mixin the user
-					Object.defineProperty context, 'user', value: _.freeze user
+					Object.defineProperty context, 'user', value: user
+					# define authentication checker
+					Object.defineProperty context, 'verify', value: model.User.verify
 					#console.log 'EFFECTIVE FACET', level, context
-					next? null, context
+					next? null, _.freeze context
 			return
 
 	#
@@ -247,32 +250,23 @@ module.exports = (config, model, callback) ->
 		model[name] =
 			query: (context, query, next) ->
 				model.User.query context, _.rql(query).eq('type',type), next
-				return
 			get: (context, id, next) ->
 				model.User.get context, id, (err, result) ->
 					result = null unless result?.type is type
 					next err, result
-				return
-			add: (context, data, next) ->
-				data ?= {}
+			add: (context, data = {}, next) ->
 				data.type = type
 				model.User.add context, data, next
-				return
 			update: (context, query, changes, next) ->
 				model.User.update context, _.rql(query).eq('type',type), changes, next
-				return
 			remove: (context, query, next) ->
 				model.User.remove context, _.rql(query).eq('type',type), next
-				return
 			delete: (context, query, next) ->
 				model.User.delete context, _.rql(query).eq('type',type), next
-				return
 			undelete: (context, query, next) ->
 				model.User.undelete context, _.rql(query).eq('type',type), next
-				return
 			purge: (context, query, next) ->
 				model.User.purge context, _.rql(query).eq('type',type), next
-				return
 		#
 		#
 		#
@@ -284,7 +278,13 @@ module.exports = (config, model, callback) ->
 			id:
 				value: name
 			schema:
-				value: model.UserAdmin.schema
+				value: User.schema
+
+	#
+	#
+	# TODO: shouldn't be external?
+	#
+	#
 
 	######################################
 	################### FACETS
@@ -319,10 +319,8 @@ module.exports = (config, model, callback) ->
 					id: user.id
 					email: user.email
 					type: user.type
-					schema: s
+				schema: s
 				#context: context
-		login: model.User.login
-		Hit: PermissiveFacet model.Hit
 
 	# user -- authenticated authority
 	FacetForUser = _.freeze _.extend {}, FacetForGuest,
@@ -331,6 +329,7 @@ module.exports = (config, model, callback) ->
 		#	set: model.User.setProfile
 		getProfile: model.User.getProfile
 		setProfile: model.User.setProfile
+		Hit: PermissiveFacet model.Hit
 
 	# root -- hardcoded DB owner
 	FacetForRoot = _.freeze _.extend {}, FacetForUser,

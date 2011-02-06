@@ -1,6 +1,7 @@
 #!/usr/local/bin/coffee
 'use strict'
 
+process.argv.shift()
 require.paths.unshift __dirname + '/lib/node'
 
 config = require './config'
@@ -38,16 +39,12 @@ All {},
 		#
 		handler = require('stack')(
 
-			simple.handlers.static
-				dir: config.server.static.dir
-				ttl: config.server.static.ttl
+			simple.handlers.jsonBody
+				maxLength: 0 # set to >0 to limit the number of bytes
 
 			#simple.handlers.mount '/foo1',
 			#	get: (req, res, next) -> res.send 'GETFOO1'
 			#	post: (req, res, next) -> res.send 'POSTFOO1'
-
-			simple.handlers.jsonBody
-				maxLength: 0 # set to >0 to limit the number of bytes
 
 			#simple.handlers.body
 			#	uploadDir: config.upload.dir
@@ -65,9 +62,40 @@ All {},
 			simple.handlers.jsonrpc
 				maxBodyLength: 0 # set to >0 to limit the number of bytes
 
+			#simple.handlers.mount 'POST', '/foo', (req, res, next) ->
+			#	res.send 'FOO'
+
+			simple.handlers.static
+				dir: config.server.static.dir
+				ttl: config.server.static.ttl
+
 		)
 
 		#
 		# run the application
 		#
-		simple.run handler, config.server
+		unless process.argv[2] is 'test'
+			simple.run handler, config.server
+		else
+			console.log '!!!TESTING MODE!!!'
+			#T = require('./test') app
+			#testing = require 'async_testing'
+			#testing.runSuite T, {}, (err, result) ->
+			#	console.log 'DONE', arguments
+			#	process.exit not err
+
+			T = require('./test/000.basics') app
+			#console.log T
+			#T.run()
+
+			#qunit = require 'node-qunit'
+			#qunit.options.coverage = false
+			#qunit.run
+			#	tests: ['./test/000.basics.coffee']
+
+	#
+	# define fallback
+	#
+	(err, result, next) ->
+
+		console.log "OOPS, shouldn't have been here!", err

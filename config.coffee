@@ -5,7 +5,7 @@ module.exports =
 	server:
 
 		port: 3000
-		workers: 0 #require('os').cpus().length
+		workers: require('os').cpus().length
 		#uid: 65534
 		#gid: 65534
 		#pwd: './secured-root'
