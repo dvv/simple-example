@@ -43,6 +43,8 @@ visionmedia/should.js:should
 dvv/Faker.js:faker
 #
 roymap/node-maxmind-native/maxmind.js:maxmind.js
+#wadey/node-geoip/lib/geoip:geoip
+#bnoordhuis/node-mmap/build/default/mmap.node:mmap.node
 #
 '
 
