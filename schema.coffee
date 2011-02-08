@@ -8,17 +8,17 @@ config = require './config'
 #
 ro = (attr) ->
 	_.extend {}, attr,
-		readonly:
+		veto:
 			update: true
 
 wo = (attr) ->
 	_.extend {}, attr,
-		readonly:
+		veto:
 			get: true
 
 cr = (attr) ->
 	_.extend {}, attr,
-		readonly:
+		veto:
 			get: true
 			update: true
 
@@ -35,7 +35,7 @@ schema.Language =
 		id:
 			type: 'string'
 			pattern: '^[a-zA-Z0-9_]+$'
-			readonly:
+			veto:
 				update: true
 		name:
 			type: 'string'
@@ -53,7 +53,7 @@ schema.Course =
 		cur:
 			type: 'string'
 			pattern: '^[A-Z]{3}$'
-			readonly:
+			veto:
 				update: true
 		value:
 			type: 'number'
@@ -67,7 +67,7 @@ schema.Currency =
 		id:
 			type: 'string'
 			pattern: '^[A-Z]{3}$'
-			readonly:
+			veto:
 				update: true
 		value:
 			type: 'number'
@@ -79,7 +79,7 @@ schema.Region =
 		id:
 			type: 'string'
 			pattern: '^[A-Z_]+$'
-			readonly:
+			veto:
 				update: true
 		name:
 			type: 'string'
@@ -91,7 +91,7 @@ schema.Country =
 		id:
 			type: 'string'
 			pattern: '^[A-Z]+$'
-			readonly:
+			veto:
 				update: true
 		name:
 			type: 'string'
@@ -149,7 +149,7 @@ schema.Hit =
 	properties:
 		id:
 			type: 'string'
-			readonly:
+			veto:
 				update: true
 		name:
 			type: 'string'
@@ -164,7 +164,7 @@ UserEntity =
 		id:
 			type: 'string'
 			pattern: '^[a-zA-Z0-9_]+$'
-			readonly:
+			veto:
 				update: true
 		# ----- authority -----
 		type:

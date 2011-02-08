@@ -77,24 +77,13 @@ All {},
 		#
 		# run the application
 		#
-		unless process.argv[1] is 'test'
-			simple.run handler, config.server
-		else
+		# app.getContext('root',function(err,ctx){Boolean.ctx=ctx});
+		# Boolean.ctx.Region.add(Boolean.ctx, {}, function(err,res){console.log(err.stack)})
+		#
+		if process.argv[1] is 'test'
 			console.log '!!!TESTING MODE!!!'
-			#T = require('./test') app
-			#testing = require 'async_testing'
-			#testing.runSuite T, {}, (err, result) ->
-			#	console.log 'DONE', arguments
-			#	process.exit not err
-
 			T = require('./test/000.basics') app
-			#console.log T
-			#T.run()
-
-			#qunit = require 'node-qunit'
-			#qunit.options.coverage = false
-			#qunit.run
-			#	tests: ['./test/000.basics.coffee']
+		simple.run handler, config.server
 
 	#
 	# define fallback

@@ -75,11 +75,23 @@ blockUser = (name) ->
 
 module.exports = (app) ->
 
-	vows = require 'vows'
+	vows = require 'vows/vows'
 
 	globals = {}
 
 	vows.describe('Capabilities').addBatch(
+		'Bound':
+			topic: () -> app.getContext 'root', @callback
+			'lengths': (ctx) ->
+				t1 = Date.now()
+				for i in [0..1000]
+					for own k, v of ctx
+						for own n, f of v
+							v[n] = f.bind null, ctx if _.isFunction f
+				dt = Date.now() - t1
+				console.log i, dt
+				#console.error safe
+	).addBatch(
 		'Basic':
 			topic: {a: 'b'},
 			'prepare': (topic) ->
@@ -108,7 +120,8 @@ module.exports = (app) ->
 				'guest caps':
 					topic: (ctx) ->
 						globals.guestCtx = ctx
-						ctx.getRoot.call undefined, ctx, 'this is just ignored', @callback
+						#ctx.getRoot.call undefined, ctx, 'this is just ignored', @callback
+						ctx.getRoot ctx, 'this is just ignored', @callback
 					'guest caps should have dummy user': (root) ->
 						assert.deepEqual root.user,
 							id: undefined

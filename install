@@ -1,9 +1,9 @@
 #!/bin/sh
 
 deps='
-dvv/jse/lib:jse
+dvv/jse/src:jse
 cloudhead/eyes.js/lib/eyes.js:eyes.js
-akidee/step/lib/step.js:step.js
+#akidee/step/lib/step.js:step.js
 creationix/stack/stack.js:stack.js
 creationix/simple-mime/simple-mime.js:mime.js
 documentcloud/underscore/underscore.js:underscore.js
@@ -16,12 +16,10 @@ edtsech/underscore.string/lib/underscore.string.js:../../public/test/underscore.
 Modernizr/Modernizr/modernizr.js:../../public/js/modernizr.js
 douglascrockford/JSON-js/json2.js:../js/json2.js
 #
-kriskowal/es5-shim/es5-shim.js:../js/es5-shim.js
+#kriskowal/es5-shim/es5-shim.js:../js/es5-shim.js
 #
 documentcloud/backbone/backbone.js:../js/backbone.js
 dvv/schema2form/index.js:../js/schema2form.js
-#dvv/rql/lib:rql
-#dvv/rql/lib:../js/rql
 #
 maqr/node-xml2js/lib:xml2js
 astro/node-expat/build/default/node-expat.node:node-expat.node
@@ -30,7 +28,7 @@ tautologistics/node-htmlparser/lib/htmlparser.js:htmlparser.js
 isaacs/sax-js/lib/sax.js:sax.js
 #
 dvv/node-mongodb-native:mongodb
-dvv/coffee-mongo/lib:mongo
+#dvv/coffee-mongo/lib:mongo
 cloudhead/node-static/lib:static
 jed/cookie-node/index.js:cookie.js
 3rd-eden/node-useragent/useragent.js:useragent.js
@@ -38,13 +36,10 @@ weaver/node-mail/lib/mail:mail
 miksago/node-websocket-server/lib:ws-server
 learnboost/socket.io-node:io
 #
-caolan/nodeunit:
-visionmedia/should.js:should
+cloudhead/vows/lib:vows
 dvv/Faker.js:faker
 #
-roymap/node-maxmind-native/maxmind.js:maxmind.js
-#wadey/node-geoip/lib/geoip:geoip
-#bnoordhuis/node-mmap/build/default/mmap.node:mmap.node
+dvv/simple-geoip:geoip
 #
 '
 

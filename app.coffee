@@ -243,6 +243,13 @@ module.exports = (config, model, callback) ->
 					# define authentication checker
 					Object.defineProperty context, 'verify', value: model.User.verify
 					#console.log 'EFFECTIVE FACET', level, context
+					# bind all functions in the context to the context
+					#safe = {}
+					#for own k, v of context
+					#	safe[k] = {}
+					#	for own n, f of v
+					#		safe[k][n] = if _.isFunction f then f.bind null, context else f
+					#next? null, _.freeze safe
 					next? null, _.freeze context
 			return
 
@@ -380,7 +387,7 @@ module.exports = (config, model, callback) ->
 	#
 	# return the sole method to get user authority
 	#
-	global.app =
+	global.app = app = Object.freeze
 		getContext: model.User.getContext
 
 	callback? null, app
