@@ -1,1 +1,0 @@
-../../git/stack/stack.js
