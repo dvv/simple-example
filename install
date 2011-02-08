@@ -1,45 +1,25 @@
 #!/bin/sh
 
 deps='
-dvv/jse/src:jse
-cloudhead/eyes.js/lib/eyes.js:eyes.js
-#akidee/step/lib/step.js:step.js
-creationix/stack/stack.js:stack.js
-creationix/simple-mime/simple-mime.js:mime.js
-documentcloud/underscore/underscore.js:underscore.js
+dvv/simple/src:simple
+#cloudhead/eyes.js/lib/eyes.js:eyes.js
 documentcloud/underscore/underscore.js:../js/underscore.js
 documentcloud/underscore/underscore.js:../../public/test/underscore.js
-jquery/qunit/qunit:../../public/test/qunit
-edtsech/underscore.string/lib/underscore.string.js:underscore.string.js
 edtsech/underscore.string/lib/underscore.string.js:../js/underscore.string.js
-edtsech/underscore.string/lib/underscore.string.js:../../public/test/underscore.string.js
+jquery/qunit/qunit:../../public/test/qunit
 Modernizr/Modernizr/modernizr.js:../../public/js/modernizr.js
 douglascrockford/JSON-js/json2.js:../js/json2.js
-#
-#kriskowal/es5-shim/es5-shim.js:../js/es5-shim.js
-#
 documentcloud/backbone/backbone.js:../js/backbone.js
 dvv/schema2form/index.js:../js/schema2form.js
-#
-maqr/node-xml2js/lib:xml2js
-astro/node-expat/build/default/node-expat.node:node-expat.node
-Poetro/node-xml2js-expat/lib/xml2js.js:xml2js.js
-tautologistics/node-htmlparser/lib/htmlparser.js:htmlparser.js
-isaacs/sax-js/lib/sax.js:sax.js
-#
-dvv/node-mongodb-native:mongodb
-#dvv/coffee-mongo/lib:mongo
-cloudhead/node-static/lib:static
-jed/cookie-node/index.js:cookie.js
-3rd-eden/node-useragent/useragent.js:useragent.js
+#3rd-eden/node-useragent/useragent.js:useragent.js
 weaver/node-mail/lib/mail:mail
-miksago/node-websocket-server/lib:ws-server
-learnboost/socket.io-node:io
+#miksago/node-websocket-server/lib:ws-server
+#learnboost/socket.io-node:io
 #
-cloudhead/vows/lib:vows
-dvv/Faker.js:faker
+#cloudhead/vows/lib:vows
+#dvv/Faker.js:faker
 #
-dvv/simple-geoip:geoip
+#dvv/simple-geoip:geoip
 #
 '
 
@@ -84,7 +64,6 @@ done
 
 cat \
 	$jslib/json2.js \
-	$jslib/es5-shim.js \
 	$jslib/underscore.js \
 	$jslib/underscore.string.js \
 	$jslib/backbone.js \

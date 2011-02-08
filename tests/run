@@ -1,4 +1,0 @@
-#!/bin/sh
-
-coffee -b -c *.coffee
-(cd .. ; ./lib/node/should/support/expresso/bin/expresso -s)

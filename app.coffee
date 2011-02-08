@@ -44,10 +44,8 @@ module.exports = (config, model, callback) ->
 	######################################
 
 	#
-	# N.B. we redefine User accessors to honor acting on self
+	# N.B. we redefine User accessors to honor security when a user acts on self
 	#
-
-	# TODO: add "owned" conditions === .eq('_meta.history.0.who',@user.id) unless root
 	User = model.User
 	model.User =
 
@@ -256,28 +254,27 @@ module.exports = (config, model, callback) ->
 	#
 	# define User flavors
 	#
-	owned = (context, query) -> if context?.user?.id then _.rql(query).eq('_meta.history.0.who', context?.user?.id) else _.rql(query)
 	_.each {affiliate: 'Affiliate', merchant: 'Merchant', admin: 'Admin'}, (name, type) ->
 		model[name] =
 			query: (context, query, next) ->
-				model.User.query context, owned(context, query).eq('type',type), next
+				model.User.query context, User.owned(context, query).eq('type',type), next
 			get: (context, id, next) ->
-				query = owned(context, 'limit(1)').eq('type',type).eq('id',id)
+				query = User.owned(context, 'limit(1)').eq('type',type).eq('id',id)
 				model.User.query context, query, (err, result) ->
 					next? err, result[0] or null
 			add: (context, data = {}, next) ->
 				data.type = type
 				model.User.add context, data, next
 			update: (context, query, changes, next) ->
-				model.User.update context, owned(context, query).eq('type',type), changes, next
+				model.User.update context, User.owned(context, query).eq('type',type), changes, next
 			remove: (context, query, next) ->
-				model.User.remove context, owned(context, query).eq('type',type), next
+				model.User.remove context, User.owned(context, query).eq('type',type), next
 			delete: (context, query, next) ->
-				model.User.delete context, owned(context, query).eq('type',type), next
+				model.User.delete context, User.owned(context, query).eq('type',type), next
 			undelete: (context, query, next) ->
-				model.User.undelete context, owned(context, query).eq('type',type), next
+				model.User.undelete context, User.owned(context, query).eq('type',type), next
 			purge: (context, query, next) ->
-				model.User.purge context, owned(context, query).eq('type',type), next
+				model.User.purge context, User.owned(context, query).eq('type',type), next
 		#
 		#
 		#
@@ -303,11 +300,7 @@ module.exports = (config, model, callback) ->
 
 	PermissiveFacet = (obj, plus...) ->
 		# register permissive facet -- set of entity accessors
-		expose = ['schema', 'id', 'query', 'get', 'add', 'update', 'remove']
-		#
-		# FIXME: @attrInactive?! from config?
-		#
-		#expose = expose.concat ['delete', 'undelete', 'purge'] if @attrInactive
+		expose = ['schema', 'id', 'query', 'get', 'add', 'update', 'remove', 'delete', 'undelete', 'purge']
 		expose = expose.concat plus if plus.length
 		_.proxy obj, expose
 

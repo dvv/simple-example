@@ -28,13 +28,11 @@ module.exports =
 				password: '123'
 				secret: '321'
 				type: 'root'
-				active: true
 
 	database:
 
 		url: '' #'mongodb://127.0.0.1/simple'
-		filterBy: 'active'
-		hardLimit: 100
+		#attrInactive: '_deleted'
 
 	upload:
 
