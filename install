@@ -24,7 +24,7 @@ weaver/node-mail/lib/mail:mail
 '
 
 # download dependencies
-lib=lib/node
+lib=node_modules
 jslib="$lib/../js"
 mkdir -p "$lib" "$jslib"
 for dep in $deps; do
@@ -56,7 +56,7 @@ for dep in $deps; do
 	fi
 	# symlink entry point
 	if test "Q$link" != 'Q'; then
-		test -e "$lib/$link" || ln -s "../../git/$path" "$lib/$link"
+		test -e "$lib/$link" || ln -s "../git/$path" "$lib/$link"
 	fi
 done
 

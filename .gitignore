@@ -1,5 +1,5 @@
 git
-lib
+node_modules
 upload
 hz
 *.dat
