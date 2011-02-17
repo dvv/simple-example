@@ -17,43 +17,11 @@ require({
 	locale: currentLocale
 }, [
 	'js/bundle.js',
-	'rql',
 	'i18n!nls/forms' // i18n
-], function(x1, RQL, i18nForms){
-
-window.RQL = RQL;
+], function(x1, i18nForms){
 
 // improve _
 _.mixin({
-	coerce123: function(instance, type){
-		var date, t;
-		t = type;
-		if (t === 'string') {
-			instance = instance != null ? ''+instance : '';
-		} else if (t === 'number' || t === 'integer') {
-			if (!_.isNaN(instance)) {
-				instance = +instance;
-				if (t === 'integer') {
-					instance = Math.floor(instance);
-				}
-			}
-		} else if (t === 'boolean') {
-			instance = instance === 'false' ? false : !!instance;
-		} else if (t === 'null') {
-			instance = null;
-		} else if (t === 'object') {
-			// FIXME: any better?
-			if (JSON && JSON.parse) try {instance = JSON.parse(instance);} catch (x){}
-		} else if (t === 'array') {
-			instance = _.toArray(instance);
-		} else if (t === 'date') {
-			date = new Date(instance);
-			if (!_.isNaN(date.getTime())) {
-				instance = date;
-			}
-		}
-		return instance;
-	},
 	partial: function(templateIds, data){
 		if (!_.isArray(templateIds)) {
 			templateIds = [templateIds, 'notfound'];

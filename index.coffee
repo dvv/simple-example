@@ -5,7 +5,7 @@ process.argv.shift() # still report 'node' as argv[0]
 require.paths.unshift __dirname + '/lib/node'
 
 config = require './config'
-simple = require 'simple'
+simple = require './node_modules/simple'
 
 All {},
 
@@ -68,9 +68,9 @@ All {},
 			simple.handlers.mount 'GET', '/geo', (req, res, next) ->
 				res.send require('fs').readFileSync('./geo/Geo.json')
 
-			simple.handlers.static
-				dir: config.server.static.dir
-				ttl: config.server.static.ttl
+			simple.handlers.static_
+				dir: config.server.pub.dir
+				ttl: config.server.pub.ttl
 
 		)
 

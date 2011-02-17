@@ -2,31 +2,33 @@
 
 deps='
 dvv/simple/src:simple
-#cloudhead/eyes.js/lib/eyes.js:eyes.js
-documentcloud/underscore/underscore.js:../js/underscore.js
-documentcloud/underscore/underscore.js:../../public/test/underscore.js
-edtsech/underscore.string/lib/underscore.string.js:../js/underscore.string.js
-jquery/qunit/qunit:../../public/test/qunit
-Modernizr/Modernizr/modernizr.js:../../public/js/modernizr.js
-douglascrockford/JSON-js/json2.js:../js/json2.js
-documentcloud/backbone/backbone.js:../js/backbone.js
-dvv/schema2form/index.js:../js/schema2form.js
+Modernizr/Modernizr/modernizr.js:COPY
+douglascrockford/JSON-js/json2.js:BUNDLE
+documentcloud/underscore/underscore.js:BUNDLE
+dvv/simple/lib/object.js:BUNDLE
+dvv/simple/lib/rql.js:BUNDLE
+dvv/simple/lib/validate.js:BUNDLE
+documentcloud/backbone/backbone.js:BUNDLE
+edtsech/underscore.string/lib/underscore.string.js:BUNDLE
+dvv/schema2form/index.js:BUNDLE
 #3rd-eden/node-useragent/useragent.js:useragent.js
-weaver/node-mail/lib/mail:mail
+#weaver/node-mail/lib/mail:mail
 #miksago/node-websocket-server/lib:ws-server
 #learnboost/socket.io-node:io
 #
 #cloudhead/vows/lib:vows
 #dvv/Faker.js:faker
 #
-#dvv/simple-geoip:geoip
+dvv/simple-geoip:geoip
 #
 '
 
 # download dependencies
 lib=node_modules
-jslib="$lib/../js"
-mkdir -p "$lib" "$jslib"
+COPY=public/js
+BUNDLE=public/js/bundle.js
+mkdir -p "$lib"
+rm "$BUNDLE"
 for dep in $deps; do
 	# skip comments
 	case "$dep" in
@@ -55,11 +57,16 @@ for dep in $deps; do
 		cd ../..
 	fi
 	# symlink entry point
-	if test "Q$link" != 'Q'; then
+	if test "Q$link" = 'QBUNDLE'; then
+		cat "git/$path" >> "$BUNDLE"
+	elif test "Q$link" = 'QCOPY'; then
+		cp "git/$path" "$COPY"
+	elif test "Q$link" != 'Q'; then
 		test -e "$lib/$link" || ln -s "../git/$path" "$lib/$link"
 	fi
 done
 
+exit 0
 # minify client-side scripts
 
 cat \

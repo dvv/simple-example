@@ -289,6 +289,41 @@ module.exports = (config, model, callback) ->
 				value: User.schema
 
 	#
+	# Geo and Course fetch routines
+	#
+	model.Geo.fetch = (context, next) ->
+		require('./geo').fetchGeo (err, result) ->
+			model.Geo.remove context, 'a!=b', () ->
+				_.each result, (rec) ->
+					model.Geo.add context, rec, (err, result) ->
+						console.log 'GEOFAILED', rec.name if err
+				next()
+
+	model.Course.fetch = (context, callback) ->
+		All {},
+			(err, result, next) ->
+				# fetch currencies
+				context.Currency.query context, '', next
+			(err, currencies, next) ->
+				@currencies = currencies
+				# fetch courses
+				require('./geo').fetchCourses null, next
+			(err, courses, next) ->
+				#console.log 'CURR?', courses
+				#courses = _.query courses, _.pluck(@currencies, 'id')
+				courses = _.query courses, ['USD', 'RUB']
+				#console.log 'CURR!', courses
+				_.each courses, (rec) ->
+					console.log 'CURADDING', rec
+					context.Course.add context, rec, (err, result) ->
+						if err?[0]?.message is 'duplicated'
+							context.Course.update context, [rec.id], rec, (err, result) ->
+								console.log 'CURFAILED1', rec.name, err if err
+						if err
+							console.log 'CURFAILED2', rec.name, err if err
+				callback()
+
+	#
 	#
 	# TODO: shouldn't be external?
 	#
@@ -343,10 +378,9 @@ module.exports = (config, model, callback) ->
 		Role: PermissiveFacet model.Role
 		Group: PermissiveFacet model.Group
 		Language: PermissiveFacet model.Language
-		Region: PermissiveFacet model.Region
-		Country: PermissiveFacet model.Country
 		Currency: PermissiveFacet model.Currency
-		#Course: PermissiveFacet model.Course, 'fetch'
+		Geo: PermissiveFacet model.Geo, 'fetch'
+		Course: PermissiveFacet model.Course, 'fetch'
 
 	FacetForAffiliate = _.freeze _.extend {}, FacetForUser,
 		# TODO: owned affiliates only
@@ -362,10 +396,9 @@ module.exports = (config, model, callback) ->
 		Role: FacetForRoot.Role
 		Group: FacetForRoot.Group
 		Language: FacetForRoot.Language
-		Region: FacetForRoot.Region
-		Country: FacetForRoot.Country
 		Currency: FacetForRoot.Currency
-		#Course: FacetForRoot.Course
+		Geo: FacetForRoot.Geo
+		Course: FacetForRoot.Course
 
 	facets.public = FacetForGuest
 	facets.user = FacetForUser

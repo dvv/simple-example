@@ -1,1 +1,0 @@
-../git/schema2form/index.js

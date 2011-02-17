@@ -46,6 +46,20 @@ schema.Language =
 			console.log 'FETCHED'
 			callback?()
 
+schema.Course =
+	type: 'object'
+	additionalProperties: false
+	properties:
+		cur:
+			type: 'string'
+			pattern: '^[A-Z]{3}$'
+			veto:
+				update: true
+		value:
+			type: 'number'
+		date:
+			type: 'date'
+
 schema.Currency =
 	type: 'object'
 	additionalProperties: false
@@ -58,49 +72,41 @@ schema.Currency =
 		value:
 			type: 'number'
 
-schema.Geo =
+schema.Region =
 	type: 'object'
 	additionalProperties: false
 	properties:
 		id:
 			type: 'string'
-			pattern: /^[A-Z]{2}$/
+			pattern: '^[A-Z_]+$'
 			veto:
 				update: true
 		name:
 			type: 'string'
-		iso3:
-			type: 'string'
-			pattern: /^[A-Z]{3}$/
-		code:
-			type: 'string'
-			pattern: /^[0-9]{3}$/
-		cont:
-			type: 'string'
-			default: 'SA'
-			pattern: /^[A-Z]{2}$/
-		tz:
-			type: 'array'
-			optional: true
-			items:
-				type: 'string'
-				pattern: /^UTC/
 
-schema.Course =
+schema.Country =
 	type: 'object'
 	additionalProperties: false
 	properties:
 		id:
 			type: 'string'
-			pattern: /^[A-Z]{3}$/
+			pattern: '^[A-Z]+$'
 			veto:
 				update: true
 		name:
 			type: 'string'
-		value:
+		region: _.extend({}, schema.Region.properties.id,
+			enum: (value, next) -> next null #@Region.get value, (err, result) -> next not result
+		)
+		###
+		#currency: {$ref: 'Currency.properties.id'}
+		iso2:
+			type: 'string'
+			minLength: 2
+			maxLength: 2
+		code:
 			type: 'number'
-		date:
-			type: 'date'
+		###
 
 schema.Role =
 	type: 'object'
@@ -252,5 +258,14 @@ schema.UserSelf =
 		# ----- private profile -----
 		# user can read/change his private profile
 		secret: UserEntity.properties.secret
+
+#
+# geo data
+#
+schema.Geo =
+	type: 'object'
+	properties:
+		id:
+			type: 'string'
 
 module.exports = schema

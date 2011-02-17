@@ -12,7 +12,7 @@ module.exports =
 		#sslKey: 'key.pem'
 		#sslCert: 'cert.pem'
 		repl: true
-		static:
+		pub:
 			dir: 'public'
 			ttl: 3600
 		stackTrace: true
