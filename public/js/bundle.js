@@ -2096,10 +2096,12 @@ query = function(list, query, options) {
   if (options == null) {
     options = {};
   }
+  console.log('QUERY?', query);
   query = parse(query, options.parameters);
   if (query.error) {
     return [];
   }
+  console.log('QUERY!', query);
   queryToJS = function(value) {
     var condition, escaped, item, p, path, prm, testValue, _i, _len;
     if (_.isObject(value) && !_.isRegExp(value)) {

@@ -33,7 +33,6 @@ fetchCourses = (referenceCurrency = 'usd', next) ->
 #
 fetchGeo = (next) ->
 	#console.log 'FETCHGEO'
-	# app.getContext('root',function(err,ctx){ctx.Course.fetch(ctx,console.log)});
 	geo = {}
 	geoByName = {}
 	parseLocation 'http://en.wikipedia.org/wiki/ISO_3166-1', (err, data) ->

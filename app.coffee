@@ -1,9 +1,5 @@
 'use strict'
 
-#
-# Country r/o from geoip, regions from geoip, geo info in user record
-#
-
 module.exports = (config, model, callback) ->
 
 	#console.log 'MODEL', model
@@ -298,30 +294,40 @@ module.exports = (config, model, callback) ->
 					model.Geo.add context, rec, (err, result) ->
 						console.log 'GEOFAILED', rec.name if err
 				next()
+		return
 
-	model.Course.fetch = (context, callback) ->
-		All {},
+	model.Currency.getDefault = (context, callback) ->
+		context.Currency.query context, 'default=true', (err, result) ->
+			callback? err, (result and result[0])
+
+	model.Currency.setDefault = (context, data = {}, callback) ->
+		context.Currency.update context, undefined, {default: false}, (err, result) ->
+			return callback? err if err
+			context.Currency.update context, [data.id], {default: true, active: true}, callback
+		return
+
+	# app.getContext('root',function(err,ctx){ctx.Currency.fetch(ctx,console.log)});
+	model.Currency.fetch = (context, callback) ->
+		Next {},
 			(err, result, next) ->
-				# fetch currencies
-				context.Currency.query context, '', next
-			(err, currencies, next) ->
-				@currencies = currencies
-				# fetch courses
-				require('./geo').fetchCourses null, next
+				# get default currency
+				context.Currency.getDefault context, next
+			(err, defaultCurrency, next) ->
+				# fetch courses with respect to defaultCurrency
+				require('./geo').fetchCourses defaultCurrency, next
 			(err, courses, next) ->
-				#console.log 'CURR?', courses
-				#courses = _.query courses, _.pluck(@currencies, 'id')
-				courses = _.query courses, ['USD', 'RUB']
 				#console.log 'CURR!', courses
 				_.each courses, (rec) ->
-					console.log 'CURADDING', rec
-					context.Course.add context, rec, (err, result) ->
+					#console.log 'CURADDING', rec
+					context.Currency.add context, rec, (err, result) ->
+						#console.log 'CURADDED?', arguments, err?[0]?.message
 						if err?[0]?.message is 'duplicated'
-							context.Course.update context, [rec.id], rec, (err, result) ->
-								console.log 'CURFAILED1', rec.name, err if err
-						if err
-							console.log 'CURFAILED2', rec.name, err if err
+							context.Currency.update context, [rec.id], rec, (err, result) ->
+								#console.log 'CURFAILED1', rec.name, err if err
+						else if err
+							#console.log 'CURFAILED2', rec.name, err if err
 				callback()
+		return
 
 	#
 	#
@@ -378,9 +384,8 @@ module.exports = (config, model, callback) ->
 		Role: PermissiveFacet model.Role
 		Group: PermissiveFacet model.Group
 		Language: PermissiveFacet model.Language
-		Currency: PermissiveFacet model.Currency
+		Currency: PermissiveFacet model.Currency, 'fetch', 'setDefault'
 		Geo: PermissiveFacet model.Geo, 'fetch'
-		Course: PermissiveFacet model.Course, 'fetch'
 
 	FacetForAffiliate = _.freeze _.extend {}, FacetForUser,
 		# TODO: owned affiliates only
@@ -398,7 +403,6 @@ module.exports = (config, model, callback) ->
 		Language: FacetForRoot.Language
 		Currency: FacetForRoot.Currency
 		Geo: FacetForRoot.Geo
-		Course: FacetForRoot.Course
 
 	facets.public = FacetForGuest
 	facets.user = FacetForUser

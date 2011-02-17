@@ -46,18 +46,6 @@ schema.Language =
 			console.log 'FETCHED'
 			callback?()
 
-schema.Currency =
-	type: 'object'
-	additionalProperties: false
-	properties:
-		id:
-			type: 'string'
-			pattern: '^[A-Z]{3}$'
-			veto:
-				update: true
-		value:
-			type: 'number'
-
 schema.Geo =
 	type: 'object'
 	additionalProperties: false
@@ -86,7 +74,7 @@ schema.Geo =
 				type: 'string'
 				pattern: /^UTC/
 
-schema.Course =
+schema.Currency =
 	type: 'object'
 	additionalProperties: false
 	properties:
@@ -99,8 +87,15 @@ schema.Course =
 			type: 'string'
 		value:
 			type: 'number'
+			default: 1
 		date:
 			type: 'date'
+		default:
+			type: 'boolean'
+			default: false
+		active:
+			type: 'boolean'
+			default: false
 
 schema.Role =
 	type: 'object'
