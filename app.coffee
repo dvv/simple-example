@@ -285,15 +285,15 @@ module.exports = (config, model, callback) ->
 				value: User.schema
 
 	#
-	# Geo and Course fetch routines
+	# Geo and Course fetch routines app.getContext('root',function(err,ctx){ctx.Geo.fetch(ctx,console.log)});
 	#
-	model.Geo.fetch = (context, next) ->
+	model.Geo.fetch = (context, callback) ->
 		require('./geo').fetchGeo (err, result) ->
-			model.Geo.remove context, 'a!=b', () ->
+			context.Geo.remove context, 'a!=b', () ->
 				_.each result, (rec) ->
-					model.Geo.add context, rec, (err, result) ->
+					context.Geo.add context, rec, (err, result) ->
 						console.log 'GEOFAILED', rec.name if err
-				next()
+				callback()
 		return
 
 	model.Currency.getDefault = (context, callback) ->
@@ -325,7 +325,7 @@ module.exports = (config, model, callback) ->
 							context.Currency.update context, [rec.id], rec, (err, result) ->
 								#console.log 'CURFAILED1', rec.name, err if err
 						else if err
-							#console.log 'CURFAILED2', rec.name, err if err
+							console.log 'CURFAILED2', rec.name, err if err
 				callback()
 		return
 
