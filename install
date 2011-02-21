@@ -21,6 +21,9 @@ dvv/schema2form/index.js:BUNDLE
 #
 dvv/simple-geoip:geoip
 #
+kriszyp/jss/jss.js:jss.js
+mauricemach/coffeekup/lib/coffeekup.coffee:coffeekup.coffee
+creationix/grain:grain
 '
 
 # download dependencies

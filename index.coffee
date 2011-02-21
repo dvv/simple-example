@@ -68,8 +68,11 @@ All {},
 			simple.handlers.mount 'GET', '/geo', (req, res, next) ->
 				res.send require('fs').readFileSync('./geo/Geo.json')
 
+			simple.handlers.chrome()
+
 			simple.handlers.static_
 				dir: config.server.pub.dir
+				honorType: true
 				ttl: config.server.pub.ttl
 
 		)
