@@ -1,7 +1,7 @@
 #!/usr/local/bin/coffee
 'use strict'
 
-process.argv.shift() # still report 'node' as argv[0]
+process.argv.shift() # still reports 'node' as argv[0]
 require.paths.unshift __dirname + '/lib/node'
 
 config = require './config'
@@ -39,6 +39,7 @@ All {},
 		#
 		handler = simple.stack(
 
+			# parse JSON payload
 			simple.handlers.jsonBody
 				maxLength: 0 # set to >0 to limit the number of bytes
 
@@ -49,6 +50,7 @@ All {},
 			#simple.handlers.body
 			#	uploadDir: config.upload.dir
 
+			# setup request context
 			simple.handlers.authCookie
 				cookie: 'uid'
 				secret: config.security.secret
@@ -59,6 +61,7 @@ All {},
 
 			#simple.handlers.logRequest()
 
+			# RPC+REST
 			simple.handlers.jsonrpc
 				maxBodyLength: 0 # set to >0 to limit the number of bytes
 
@@ -68,8 +71,10 @@ All {},
 			simple.handlers.mount 'GET', '/geo', (req, res, next) ->
 				res.send require('fs').readFileSync('./geo/Geo.json')
 
+			# serve chrome page
 			simple.handlers.chrome()
 
+			# serve remaining static resourses
 			simple.handlers.static_
 				dir: config.server.pub.dir
 				honorType: true
@@ -79,9 +84,6 @@ All {},
 
 		#
 		# run the application
-		#
-		# app.getContext('root',function(err,ctx){Boolean.ctx=ctx});
-		# Boolean.ctx.Region.add(Boolean.ctx, {}, function(err,res){console.log(err.stack)})
 		#
 		if process.argv[1] is 'test'
 			console.log '!!!TESTING MODE!!!'

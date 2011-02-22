@@ -20,7 +20,7 @@ module.exports = (config, model, callback) ->
 	#
 	# hash of power users -- owners of db
 	#
-	roots = config.security.roots or {}
+	root = config.security.root or {}
 
 	#
 	# password hash function
@@ -29,11 +29,10 @@ module.exports = (config, model, callback) ->
 		sha1(salt + password + config.security.secret)
 
 	#
-	# secure admin accounts
+	# secure root account
 	#
-	for own k, v of roots
-		v.salt = nonce()
-		v.password = encryptPassword v.password, v.salt
+	root.salt = nonce()
+	root.password = encryptPassword root.password, root.salt
 
 	######################################
 	################### USER
@@ -48,8 +47,8 @@ module.exports = (config, model, callback) ->
 		get: (context, id, next) ->
 			return next? null unless id
 			isSelf = id is context?.user?.id
-			if roots[id]
-				user = roots[id]
+			if root.id is id
+				user = root
 				profile = _.extend {},
 					id: user.id
 					type: user.type
@@ -73,7 +72,7 @@ module.exports = (config, model, callback) ->
 			#console.log 'SIGNUP BY', data, context.user
 			Next context,
 				(err, result, step) ->
-					step null, (roots[data.id] or null)
+					step null, (if root.id is data.id then root else null)
 				(err, user, step) ->
 					#console.log 'USER', user, data
 					return step err if err
@@ -211,17 +210,17 @@ module.exports = (config, model, callback) ->
 		getContext: (uid, next) ->
 			Next null,
 				(err, result, step) ->
-					if not uid or roots[uid]
-						step null, _.clone roots[uid]
+					if root.id is uid
+						step null, _.clone root
 					else
 						User._get null, @, uid, step
 				(err, user = {}, step) ->
 					#console.log 'USER', uid, user, user._meta.history
 					# config.server.disabled disables guest or vanilla user interface
 					# TODO: watchFile ./down to control config.server.disabled
-					if config.server.disabled and not roots[user.id]
+					if config.server.disabled and root.id isnt user.id
 						level = 'none'
-					else if config.security.bypass or roots[user.id]
+					else if config.security.bypass or root.id is user.id
 						level = 'root'
 					else if user.id and user.type
 						level = user.type # N.B. can be an array of levels
@@ -250,7 +249,7 @@ module.exports = (config, model, callback) ->
 	#
 	# define User flavors
 	#
-	_.each {affiliate: 'Affiliate', merchant: 'Merchant', admin: 'Admin'}, (name, type) ->
+	_.each {affiliate: 'Affiliate', admin: 'Admin'}, (name, type) ->
 		model[name] =
 			query: (context, query, next) ->
 				model.User.query context, User.owned(context, query).eq('type',type), next
@@ -285,15 +284,17 @@ module.exports = (config, model, callback) ->
 				value: User.schema
 
 	#
-	# Geo and Course fetch routines app.getContext('root',function(err,ctx){ctx.Geo.fetch(ctx,console.log)});
+	# Geo and Course fetch routines
+	#
+	# app.getContext('root',function(err,ctx){ctx.Geo.fetch(ctx,console.log)});
 	#
 	model.Geo.fetch = (context, callback) ->
-		require('./geo').fetchGeo (err, result) ->
-			context.Geo.remove context, 'a!=b', () ->
-				_.each result, (rec) ->
-					context.Geo.add context, rec, (err, result) ->
-						console.log 'GEOFAILED', rec.name if err
-				callback()
+		context.Geo.remove context, 'a!=b', () ->
+			_.each require('geoip')().countries, (rec) ->
+				return if rec.iso3.length < 3
+				context.Geo.add context, rec, (err, result) ->
+					console.log 'GEOFAILED', rec.name, err if err
+			callback()
 		return
 
 	model.Currency.getDefault = (context, callback) ->
@@ -374,12 +375,10 @@ module.exports = (config, model, callback) ->
 		#	set: model.User.setProfile
 		getProfile: model.User.getProfile
 		setProfile: model.User.setProfile
-		Hit: PermissiveFacet model.Hit
 
 	# root -- hardcoded DB owner
 	FacetForRoot = _.freeze _.extend {}, FacetForUser,
 		Affiliate: PermissiveFacet model.Affiliate
-		Merchant: PermissiveFacet model.Merchant
 		Admin: PermissiveFacet model.Admin
 		Role: PermissiveFacet model.Role
 		Group: PermissiveFacet model.Group
@@ -387,7 +386,9 @@ module.exports = (config, model, callback) ->
 		Currency: PermissiveFacet model.Currency, 'fetch', 'setDefault'
 		Geo: PermissiveFacet model.Geo, 'fetch'
 
-	FacetForAffiliate = _.freeze _.extend {}, FacetForUser,
+	FacetForAffiliate = _.freeze _.extend {}, FacetForUser, {}
+
+	FacetForReseller = _.freeze _.extend {}, FacetForAffiliate,
 		# TODO: owned affiliates only
 		Affiliate: FacetForRoot.Affiliate
 
@@ -396,7 +397,6 @@ module.exports = (config, model, callback) ->
 	# admin -- powerful user
 	FacetForAdmin = _.freeze _.extend {}, FacetForUser,
 		Affiliate: FacetForRoot.Affiliate
-		Merchant: FacetForRoot.Merchant
 		Admin: FacetForRoot.Admin
 		Role: FacetForRoot.Role
 		Group: FacetForRoot.Group

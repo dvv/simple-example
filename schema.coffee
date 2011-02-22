@@ -41,10 +41,6 @@ schema.Language =
 			type: 'string'
 		localName:
 			type: 'string'
-	prototype:
-		fetch: (callback) ->
-			console.log 'FETCHED'
-			callback?()
 
 schema.Geo =
 	type: 'object'
@@ -60,19 +56,19 @@ schema.Geo =
 		iso3:
 			type: 'string'
 			pattern: /^[A-Z]{3}$/
-		code:
-			type: 'string'
-			pattern: /^[0-9]{3}$/
+		#code:
+		#	type: 'string'
+		#	pattern: /^[0-9]{3}$/
 		cont:
 			type: 'string'
-			default: 'SA'
-			pattern: /^[A-Z]{2}$/
+			default: 'EU'
+			enum: ['AF', 'AN', 'AS', 'EU', 'NA', 'OC', 'SA']
 		tz:
 			type: 'array'
-			optional: true
 			items:
 				type: 'string'
-				pattern: /^UTC/
+				#pattern: /^UTC/
+			optional: true
 
 schema.Currency =
 	type: 'object'
@@ -101,9 +97,11 @@ schema.Role =
 	type: 'object'
 	additionalProperties: false
 	properties:
-		name:
+		id:
 			type: 'string'
-		description:
+			veto:
+				update: true
+		name:
 			type: 'string'
 			optional: true
 		rights:
@@ -116,23 +114,9 @@ schema.Role =
 						enum: () -> _.keys model # TODO: should be keys of the context!
 					access:
 						type: 'integer'
-						enum: [0, 1, 2, 3]
+						enum: [0, 1, 2, 3] # TODO: should be not higher than the current user's one
 
 schema.Group =
-	type: 'object'
-	additionalProperties: false
-	properties:
-		name:
-			type: 'string'
-		description:
-			type: 'string'
-		roles:
-			type: 'array'
-			items: _.extend({}, schema.Role.properties.id,
-				enum: (value, next) -> @Role.get value, (err, result) -> next not result
-			)
-
-schema.Hit =
 	type: 'object'
 	additionalProperties: false
 	properties:
@@ -142,6 +126,12 @@ schema.Hit =
 				update: true
 		name:
 			type: 'string'
+			optional: true
+		roles:
+			type: 'array'
+			items: _.extend({}, schema.Role.properties.id,
+				enum: (value, next) -> @Role.get value, (err, result) -> next not result
+			)
 
 #
 # User entity
@@ -158,12 +148,20 @@ UserEntity =
 		# ----- authority -----
 		type:
 			type: 'string'
-		rights:
-			type: 'any' # so far
-			default: ''
+			enum: ['affiliate', 'admin']
+		roles:
+			type: 'array'
+			items:
+				type: 'string'
+				enum: (value, callback) -> @Role.get value, (err, result) -> callback not result, result
+			optional: true
 		blocked:
-			type: 'boolean'
-			default: false
+			type: 'string'
+			optional: true
+		status:
+			type: 'string'
+			enum: ['pending', 'approved', 'declined']
+			default: 'pending'
 		# ----- authentication -----
 		password:
 			type: 'string'
@@ -171,6 +169,12 @@ UserEntity =
 			type: 'string'
 		secret:
 			type: 'string'
+			optional: true
+		# ----- tagging -----
+		tags:
+			type: 'array'
+			items:
+				type: 'string'
 			optional: true
 		# ----- profile -----
 		name:
@@ -202,14 +206,18 @@ schema.User =
 		# type is always readonly
 		type: ro UserEntity.properties.type
 		# admin can get/set rights
-		rights: UserEntity.properties.rights
+		roles: UserEntity.properties.roles
 		# admin can block/unblock users
 		blocked: UserEntity.properties.blocked
+		# admin can change the status
+		status: UserEntity.properties.status
 		# ----- authentication -----
 		# admin can set initial values to password/salt
 		# TODO: think whether feasible to let only user to change the pass?!
 		password: cr UserEntity.properties.password
 		salt: cr UserEntity.properties.salt
+		# ----- tagging -----
+		tags: UserEntity.properties.tags
 		# ----- public profile -----
 		# admin can read public profile
 		name: ro UserEntity.properties.name
@@ -232,8 +240,7 @@ schema.UserSelf =
 		# ----- authority -----
 		# user can read his authority
 		type: ro UserEntity.properties.type
-		rights: ro UserEntity.properties.rights
-		blocked: ro UserEntity.properties.blocked
+		roles: ro UserEntity.properties.roles
 		# ----- authentication -----
 		# user can set his password, but cannot get it
 		password: wo UserEntity.properties.password

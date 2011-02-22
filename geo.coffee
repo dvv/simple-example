@@ -76,7 +76,11 @@ module.exports.fetchCoursesCBR = (referenceCurrency = 'usd', next) ->
 #
 # fetch world countries with some ISO info from various WIKI pages
 #
-module.exports.fetchGeo = (next) ->
+#
+# DEPRECATED: use require('simple-geoip')().countries instead
+#
+#module.exports.
+fetchGeo = (next) ->
 	#console.log 'FETCHGEO'
 	geo = {}
 	geoByName = {}

@@ -21,13 +21,12 @@ module.exports =
 
 		#bypass: true
 		secret: 'change-me-on-production-server'
-		roots:
-			root:
-				id: 'root'
-				email: 'place-admin@here.com'
-				password: '123'
-				secret: '321'
-				type: 'root'
+		root:
+			id: 'root'
+			email: 'place-admin@here.com'
+			password: '123'
+			secret: '321'
+			type: 'root'
 
 	database:
 
