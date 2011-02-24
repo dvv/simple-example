@@ -74,6 +74,13 @@ module.exports.fetchCoursesCBR = (referenceCurrency = 'usd', next) ->
 		dom.forEach fn
 
 #
+# fetch currency courses from http://www.ecb.int/stats/eurofxref/eurofxref-daily.xml
+#
+module.exports.fetchCoursesECB = (referenceCurrency = 'usd', next) ->
+	parseLocation "http://www.ecb.int/stats/eurofxref/eurofxref-daily.xml", (err, dom) ->
+		console.log err, dom
+
+#
 # fetch world countries with some ISO info from various WIKI pages
 #
 #
