@@ -9,8 +9,8 @@ module.exports =
 		#uid: 65534
 		#gid: 65534
 		#pwd: './secured-root'
-		#sslKey: 'key.pem'
-		#sslCert: 'cert.pem'
+		#sslKey: '../key.pem'
+		#sslCert: '../cert.pem'
 		repl: true
 		pub:
 			dir: 'public'

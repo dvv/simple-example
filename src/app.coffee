@@ -315,10 +315,16 @@ module.exports = (config, model, callback) ->
 				context.Currency.getDefault context, next
 			(err, defaultCurrency, next) ->
 				# fetch courses with respect to defaultCurrency
-				require('./geo').fetchCourses defaultCurrency, next
+				require('./currency').fetchExchangeRates defaultCurrency, next
 			(err, courses, next) ->
 				#console.log 'CURR!', courses
+				date = Date.now()
 				_.each courses, (rec) ->
+					if _.isEmpty rec.value
+						rec.value = undefined
+					else
+						rec.value = _.reduce(rec.value, ((s, y) -> s += y), 0) / _.size(rec.value)
+					rec.date = date
 					#console.log 'CURADDING', rec
 					context.Currency.add context, rec, (err, result) ->
 						#console.log 'CURADDED?', arguments, err?[0]?.message

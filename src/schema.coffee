@@ -81,6 +81,7 @@ schema.Currency =
 				update: true
 		name:
 			type: 'string'
+			optional: true
 		value:
 			type: 'number'
 			default: 1

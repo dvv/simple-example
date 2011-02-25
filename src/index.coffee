@@ -1,11 +1,11 @@
-#!/usr/local/bin/coffee
+#!/usr/bin/env coffee
 'use strict'
 
 process.argv.shift() # still reports 'node' as argv[0]
-require.paths.unshift __dirname + '/lib/node'
+#require.paths.unshift __dirname + '/lib/node'
 
 config = require './config'
-simple = require './node_modules/simple'
+simple = require '../node_modules/simple'
 
 All {},
 
@@ -69,7 +69,11 @@ All {},
 			#	res.send 'FOO'
 
 			simple.handlers.mount 'GET', '/geo', (req, res, next) ->
-				res.send require('fs').readFileSync('./geo/Geo.json')
+				res.send require('fs').readFileSync('./node_modules/geoip/geo.json')
+
+			simple.handlers.mount 'GET', '/course', (req, res, next) ->
+				require('./currency').fetchExchangeRates 'rub', (err, data) ->
+					res.send err or data
 
 			# serve chrome page
 			simple.handlers.chrome()
@@ -87,7 +91,7 @@ All {},
 		#
 		if process.argv[1] is 'test'
 			console.log '!!!TESTING MODE!!!'
-			require('./test/000.basics') app
+			require('../test/000.basics') app
 
 		#
 		simple.run handler, config.server

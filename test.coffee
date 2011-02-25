@@ -6,10 +6,15 @@ console.log = (args...) ->
 	for a in args
 		console.error sys.inspect a, false, 20
 
-fetchCourses = require('./geo').fetchCoursesXurrency
-#fetchCourses = require('./geo').fetchCoursesForex
-#fetchCourses = require('./geo').fetchCoursesCBR
-#fetchCourses = require('./geo').fetchCoursesECB
+simple = require './node_modules/simple'
+fetch = require('./src/currency').fetchExchangeRates
 
-fetchCourses 'usd', console.log
-process.exit 0
+fetch 'usd', (err, data) ->
+	console.log _.map data, (x) ->
+		if _.isEmpty x.value
+			x.value = undefined
+		else
+			x.value = _.reduce(x.value, ((s, y) -> s += y), 0) / _.size(x.value)
+		x
+
+#process.exit 0
