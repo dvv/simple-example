@@ -65,9 +65,6 @@ All {},
 			simple.handlers.jsonrpc
 				maxBodyLength: 0 # set to >0 to limit the number of bytes
 
-			#simple.handlers.mount 'POST', '/foo', (req, res, next) ->
-			#	res.send 'FOO'
-
 			simple.handlers.mount 'GET', '/geo', (req, res, next) ->
 				res.send require('fs').readFileSync('./node_modules/geoip/geo.json')
 
@@ -76,12 +73,12 @@ All {},
 					res.send err or data
 
 			# serve chrome page
-			simple.handlers.chrome()
+			#simple.handlers.chrome()
 
 			# serve remaining static resourses
 			simple.handlers.static_
 				dir: config.server.pub.dir
-				honorType: true
+				#honorType: true
 				ttl: config.server.pub.ttl
 
 		)

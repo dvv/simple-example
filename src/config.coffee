@@ -5,7 +5,9 @@ module.exports =
 	server:
 
 		port: 3000
-		workers: require('os').cpus().length
+		#workers: require('os').cpus().length
+		shutdownTimeout: 10000
+		websocket: true
 		#uid: 65534
 		#gid: 65534
 		#pwd: './secured-root'
@@ -13,7 +15,7 @@ module.exports =
 		#sslCert: '../cert.pem'
 		repl: true
 		pub:
-			dir: 'public'
+			dir: '../public'
 			ttl: 3600
 		stackTrace: true
 
