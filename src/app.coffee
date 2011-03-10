@@ -215,7 +215,7 @@ module.exports = (config, model, callback) ->
 					else
 						User._get null, @, uid, step
 				(err, user = {}, step) ->
-					#console.log 'USER', uid, user, user._meta.history
+					#console.log 'USER', uid, user, user._meta?.history
 					# config.server.disabled disables guest or vanilla user interface
 					# TODO: watchFile ./down to control config.server.disabled
 					if config.server.disabled and root.id isnt user.id
@@ -423,7 +423,7 @@ module.exports = (config, model, callback) ->
 	#
 	# return the sole method to get user authority
 	#
-	app = #Object.freeze
+	app = global.app =
 		getContext: model.User.getContext
 
 	callback? null, app

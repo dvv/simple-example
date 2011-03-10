@@ -24,13 +24,6 @@ dvv/schema2form/index.js:BUNDLE
 #
 # DO NOT CHANGE AFTER THIS LINE
 #
-<<<<<<< HEAD
-#kriszyp/jss/jss.js:jss.js
-#mauricemach/coffeekup/lib/coffeekup.coffee:coffeekup.coffee
-#creationix/grain:grain
-'
-=======
->>>>>>> 913e95ee953f50be0fcae536b7d2f07fc486d2fc
 
 #
 # download dependencies

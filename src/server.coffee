@@ -25,13 +25,10 @@ All {},
 		#
 		require('./app') config, model, next
 
-		#
-		# define capability object for given user uid
-		#
-		getContext = (uid, next) ->
-			context = _.extend.apply null, [{}, facet]
-			# FIXME: _.freeze is very consuming!
-			next? null, _.freeze context
+	#
+	# define server
+	#
+	(err, app, next) ->
 
 		#
 		# define middleware stack
@@ -49,7 +46,7 @@ All {},
 			simple.handlers.authCookie
 				cookie: 'uid'
 				secret: config.security.secret
-				getContext: getContext
+				getContext: app.getContext
 
 			# RPC+REST
 			simple.handlers.jsonrpc
@@ -79,8 +76,7 @@ All {},
 		#
 		# compose application
 		#
-		app = Object.freeze
-			#getContext: app.getContext
+		_.extend app,
 			getHandler: getHandler
 			messageHandler: (broadcaster, message) -> # @ === worker
 				if message.channel is 'bcast'
