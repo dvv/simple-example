@@ -243,7 +243,8 @@ module.exports = (config, model, callback) ->
 					#	for own n, f of v
 					#		safe[k][n] = if _.isFunction f then f.bind null, context else f
 					#next? null, _.freeze safe
-					next? null, _.freeze context
+					#next? null, _.freeze context
+					next? null, context
 			return
 
 	#
