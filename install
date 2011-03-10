@@ -1,7 +1,7 @@
 #!/bin/sh
 
 deps='
-dvv/simple/src:simple
+dvv/simple/lib:simple
 Modernizr/Modernizr/modernizr.js:COPY
 douglascrockford/JSON-js/json2.js:BUNDLE
 documentcloud/underscore/underscore.js:BUNDLE
@@ -9,7 +9,7 @@ dvv/simple/lib/object.js:BUNDLE
 dvv/simple/lib/rql.js:BUNDLE
 dvv/simple/lib/validate.js:BUNDLE
 documentcloud/backbone/backbone.js:BUNDLE
-edtsech/underscore.string/lib/underscore.string.js:BUNDLE
+#edtsech/underscore.string/lib/underscore.string.js:BUNDLE
 dvv/schema2form/index.js:BUNDLE
 #3rd-eden/node-useragent/useragent.js:useragent.js
 #weaver/node-mail/lib/mail:mail
@@ -21,9 +21,9 @@ dvv/schema2form/index.js:BUNDLE
 #
 dvv/simple-geoip:geoip
 #
-kriszyp/jss/jss.js:jss.js
-mauricemach/coffeekup/lib/coffeekup.coffee:coffeekup.coffee
-creationix/grain:grain
+#kriszyp/jss/jss.js:jss.js
+#mauricemach/coffeekup/lib/coffeekup.coffee:coffeekup.coffee
+#creationix/grain:grain
 '
 
 # download dependencies

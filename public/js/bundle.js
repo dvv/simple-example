@@ -1,6 +1,6 @@
 /*
     http://www.JSON.org/json2.js
-    2011-01-18
+    2011-02-23
 
     Public Domain.
 
@@ -315,8 +315,8 @@ if (!JSON) {
             if (rep && typeof rep === 'object') {
                 length = rep.length;
                 for (i = 0; i < length; i += 1) {
-                    k = rep[i];
-                    if (typeof k === 'string') {
+                    if (typeof rep[i] === 'string') {
+                        k = rep[i];
                         v = str(k, value);
                         if (v) {
                             partial.push(quote(k) + (gap ? ': ' : ':') + v);
@@ -328,7 +328,7 @@ if (!JSON) {
 // Otherwise, iterate through all of the keys in the object.
 
                 for (k in value) {
-                    if (Object.hasOwnProperty.call(value, k)) {
+                    if (Object.prototype.hasOwnProperty.call(value, k)) {
                         v = str(k, value);
                         if (v) {
                             partial.push(quote(k) + (gap ? ': ' : ':') + v);
@@ -413,7 +413,7 @@ if (!JSON) {
                 var k, v, value = holder[key];
                 if (value && typeof value === 'object') {
                     for (k in value) {
-                        if (Object.hasOwnProperty.call(value, k)) {
+                        if (Object.prototype.hasOwnProperty.call(value, k)) {
                             v = walk(value, k);
                             if (v !== undefined) {
                                 value[k] = v;
@@ -501,7 +501,7 @@ if (!JSON) {
   var breaker = {};
 
   // Save bytes in the minified (but not gzipped) version:
-  var ArrayProto = Array.prototype, ObjProto = Object.prototype;
+  var ArrayProto = Array.prototype, ObjProto = Object.prototype, FuncProto = Function.prototype;
 
   // Create quick reference variables for speed access to core prototypes.
   var slice            = ArrayProto.slice,
@@ -522,7 +522,8 @@ if (!JSON) {
     nativeIndexOf      = ArrayProto.indexOf,
     nativeLastIndexOf  = ArrayProto.lastIndexOf,
     nativeIsArray      = Array.isArray,
-    nativeKeys         = Object.keys;
+    nativeKeys         = Object.keys,
+    nativeBind         = FuncProto.bind;
 
   // Create a safe reference to the Underscore object for use below.
   var _ = function(obj) { return new wrapper(obj); };
@@ -886,7 +887,9 @@ if (!JSON) {
 
   // Create a function bound to a given object (assigning `this`, and arguments,
   // optionally). Binding with arguments is also known as `curry`.
+  // Delegates to **ECMAScript 5**'s native `Function.bind` if available.
   _.bind = function(func, obj) {
+    if (nativeBind && func.bind === nativeBind) return func.bind.apply(func, slice.call(arguments, 1));
     var args = slice.call(arguments, 2);
     return function() {
       return func.apply(obj || {}, args.concat(slice.call(arguments)));
@@ -2205,7 +2208,7 @@ var __hasProp = Object.prototype.hasOwnProperty;
 coerce = function(value, type) {
   var date;
   if (type === 'string') {
-    value = value ? '' + value : '';
+    value = value != null ? '' + value : '';
   } else if (type === 'number' || type === 'integer') {
     if (!_.isNaN(value)) {
       value = +value;
@@ -3357,7 +3360,7 @@ _.mixin({
     // For small amounts of DOM Elements, where a full-blown template isn't
     // needed, use **make** to manufacture elements, one at a time.
     //
-    //     var el = this.make('li', {'class': 'row'}, this.model.get('title'));
+    //     var el = this.make('li', {'class': 'row'}, this.model.escape('title'));
     //
     make : function(tagName, attributes, content) {
       var el = document.createElement(tagName);
@@ -3577,7 +3580,7 @@ _.mixin({
 
   // Helper function to escape a string for HTML rendering.
   var escapeHTML = function(string) {
-    return string.replace(/&(?!\w+;)/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return string.replace(/&(?!\w+;|#\d+;|#x[\da-f]+;)/gi, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   };
 
 }).call(this);
@@ -3587,7 +3590,7 @@ _.mixin({
 // Documentation: https://github.com/edtsech/underscore.string
 // Some code is borrowed from MooTools and Alexandru Marasteanu.
 
-// Version 1.0.1
+// Version 1.1.2
 
 (function(){
     // ------------------------- Baseline setup ---------------------------------
@@ -3633,10 +3636,6 @@ _.mixin({
             return _s.strip(str.replace(/\s+/g, ' '));
         },
 
-        contains: function(str, needle){
-            return str.indexOf(needle) !== -1;
-        },
-
         count: function(str, substr){
             var count = 0, index;
             for (var i=0; i < str.length;) {
@@ -3645,6 +3644,10 @@ _.mixin({
                 i = i + (index >= 0 ? index : 0) + substr.length;
             }
             return count;
+        },
+
+        chars: function(str) {
+            return str.split('');
         },
 
         escapeHTML: function(str) {
@@ -3666,6 +3669,10 @@ _.mixin({
             return arr.join('');
         },
 
+        includes: function(str, needle){
+            return str.indexOf(needle) !== -1;
+        },
+
         join: function(sep) {
             // TODO: Could this be faster by converting
             // arguments to Array and using array.join(sep)?
@@ -3680,9 +3687,13 @@ _.mixin({
             return str;
         },
 
-        reverse: function(str){
-            return Array.prototype.reverse.apply(str.split('')).join('');
+        lines: function(str) {
+            return str.split("\n");
         },
+
+//        reverse: function(str){
+//            return Array.prototype.reverse.apply(str.split('')).join('');
+//        },
 
         splice: function(str, i, howmany, substr){
             var arr = str.split('');
@@ -3736,6 +3747,11 @@ _.mixin({
         truncate: function(str, length, truncateStr){
             truncateStr = truncateStr || '...';
             return str.slice(0,length) + truncateStr;
+        },
+
+        words: function(str, delimiter) {
+            delimiter = delimiter || " ";
+            return str.split(delimiter);
         },
 
         /**
@@ -3794,7 +3810,6 @@ _.mixin({
     _s.strip      = _s.trim;
     _s.lstrip     = _s.ltrim;
     _s.rstrip     = _s.rtrim;
-    _s.includes   = _s.contains;
 
     // CommonJS module is defined
     if (typeof window === 'undefined' && typeof module !== 'undefined') {

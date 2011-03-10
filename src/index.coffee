@@ -1,11 +1,11 @@
 #!/usr/bin/env coffee
 'use strict'
 
-process.argv.shift() # still reports 'node' as argv[0]
-#require.paths.unshift __dirname + '/lib/node'
+process.argv.shift() # still report 'node' as argv[0]
+require.paths.unshift '../node_modules' # coffee counts from coffee-script binary so far
 
 config = require './config'
-simple = require '../node_modules/simple'
+simple = require 'simple'
 
 All {},
 
@@ -29,15 +29,18 @@ All {},
 		#
 		require('./app') config, model, next
 
-	#
-	# define server
-	#
-	(err, app, next) ->
+		#
+		# define capability object for given user uid
+		#
+		getContext = (uid, next) ->
+			context = _.extend.apply null, [{}, facet]
+			# FIXME: _.freeze is very consuming!
+			next? null, _.freeze context
 
 		#
 		# define middleware stack
 		#
-		handler = simple.stack(
+		getHandler = (server) -> simple.stack(
 
 			# parse JSON payload
 			simple.handlers.jsonBody
@@ -54,7 +57,7 @@ All {},
 			simple.handlers.authCookie
 				cookie: 'uid'
 				secret: config.security.secret
-				getContext: app.getContext
+				getContext: getContext
 
 			#simple.handlers.mount 'GET', '/home', (req, res, next) ->
 			#	res.send 'FOO'
@@ -69,22 +72,37 @@ All {},
 			#	res.send 'FOO'
 
 			simple.handlers.mount 'GET', '/geo', (req, res, next) ->
-				res.send require('fs').readFileSync('./node_modules/geoip/geo.json')
+				res.send require('fs').readFileSync('geoip/geo.json')
 
 			simple.handlers.mount 'GET', '/course', (req, res, next) ->
 				require('./currency').fetchExchangeRates 'rub', (err, data) ->
 					res.send err or data
 
-			# serve chrome page
-			simple.handlers.chrome()
+			simple.handlers.dynamic
+				map:
+					'/': 'test/index.html'
 
-			# serve remaining static resourses
-			simple.handlers.static_
-				dir: config.server.pub.dir
-				honorType: true
-				ttl: config.server.pub.ttl
+			simple.handlers.mount 'GET', '/foo2', (req, res, next) ->
+				res.send 'GOT FROM HOME'
+
+			simple.handlers.static
+				root: config.server.pub.dir
+				default: 'index.html'
+				#cacheMaxFileSizeToCache: 1024 # set to limit the size of cacheable file
+				cacheTTL: 1000
+				process: simple.handlers.helpers.template()
 
 		)
+
+		#
+		# compose application
+		#
+		app = Object.freeze
+			getHandler: getHandler
+			messageHandler: (broadcaster, message) -> # @ === worker
+				if message.channel is 'bcast'
+					console.error 'BCAST!', message
+					broadcaster? message.data
 
 		#
 		# run the application
@@ -94,7 +112,7 @@ All {},
 			require('../test/000.basics') app
 
 		#
-		simple.run handler, config.server
+		simple.run app, config.server
 
 	#
 	# define fallback
