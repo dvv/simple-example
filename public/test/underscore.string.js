@@ -1,1 +1,0 @@
-../../git/underscore.string/lib/underscore.string.js

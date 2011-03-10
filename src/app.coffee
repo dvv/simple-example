@@ -423,7 +423,7 @@ module.exports = (config, model, callback) ->
 	#
 	# return the sole method to get user authority
 	#
-	global.app = app = Object.freeze
+	app = #Object.freeze
 		getContext: model.User.getContext
 
 	callback? null, app

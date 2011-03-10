@@ -1,6 +1,6 @@
 /*
     http://www.JSON.org/json2.js
-    2011-01-18
+    2011-02-23
 
     Public Domain.
 
@@ -315,8 +315,8 @@ if (!JSON) {
             if (rep && typeof rep === 'object') {
                 length = rep.length;
                 for (i = 0; i < length; i += 1) {
-                    k = rep[i];
-                    if (typeof k === 'string') {
+                    if (typeof rep[i] === 'string') {
+                        k = rep[i];
                         v = str(k, value);
                         if (v) {
                             partial.push(quote(k) + (gap ? ': ' : ':') + v);
@@ -328,7 +328,7 @@ if (!JSON) {
 // Otherwise, iterate through all of the keys in the object.
 
                 for (k in value) {
-                    if (Object.hasOwnProperty.call(value, k)) {
+                    if (Object.prototype.hasOwnProperty.call(value, k)) {
                         v = str(k, value);
                         if (v) {
                             partial.push(quote(k) + (gap ? ': ' : ':') + v);
@@ -413,7 +413,7 @@ if (!JSON) {
                 var k, v, value = holder[key];
                 if (value && typeof value === 'object') {
                     for (k in value) {
-                        if (Object.hasOwnProperty.call(value, k)) {
+                        if (Object.prototype.hasOwnProperty.call(value, k)) {
                             v = walk(value, k);
                             if (v !== undefined) {
                                 value[k] = v;
@@ -501,7 +501,7 @@ if (!JSON) {
   var breaker = {};
 
   // Save bytes in the minified (but not gzipped) version:
-  var ArrayProto = Array.prototype, ObjProto = Object.prototype;
+  var ArrayProto = Array.prototype, ObjProto = Object.prototype, FuncProto = Function.prototype;
 
   // Create quick reference variables for speed access to core prototypes.
   var slice            = ArrayProto.slice,
@@ -522,7 +522,8 @@ if (!JSON) {
     nativeIndexOf      = ArrayProto.indexOf,
     nativeLastIndexOf  = ArrayProto.lastIndexOf,
     nativeIsArray      = Array.isArray,
-    nativeKeys         = Object.keys;
+    nativeKeys         = Object.keys,
+    nativeBind         = FuncProto.bind;
 
   // Create a safe reference to the Underscore object for use below.
   var _ = function(obj) { return new wrapper(obj); };
@@ -886,7 +887,9 @@ if (!JSON) {
 
   // Create a function bound to a given object (assigning `this`, and arguments,
   // optionally). Binding with arguments is also known as `curry`.
+  // Delegates to **ECMAScript 5**'s native `Function.bind` if available.
   _.bind = function(func, obj) {
+    if (nativeBind && func.bind === nativeBind) return func.bind.apply(func, slice.call(arguments, 1));
     var args = slice.call(arguments, 2);
     return function() {
       return func.apply(obj || {}, args.concat(slice.call(arguments)));
@@ -1170,24 +1173,34 @@ if (!JSON) {
     return prefix ? prefix + id : id;
   };
 
+  // Escape special HTML entities
+	_.escapeHTML = function(x) {
+    return (x == null) ? '' : String(x).replace(/&(?!\w+;|#\d+;|#x[\da-f]+;)/gi, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  };
+
   // By default, Underscore uses ERB-style template delimiters, change the
   // following template settings to use alternative delimiters.
   _.templateSettings = {
     evaluate    : /<%([\s\S]+?)%>/g,
-    interpolate : /<%=([\s\S]+?)%>/g
+    interpolate : /<%=([\s\S]+?)%>/g,
+    escape      : /<%!([\s\S]+?)%>/g
   };
 
   // JavaScript micro-templating, similar to John Resig's implementation.
   // Underscore templating handles arbitrary delimiters, preserves whitespace,
   // and correctly escapes quotes within interpolated code.
-  _.template = function(str, data) {
-    var c  = _.templateSettings;
+  // The third optional parameter temporarily overrides system-wide _.templateSettings.
+  _.template = function(str, data, settings) {
+    var c  = settings || _.templateSettings;
     var tmpl = 'var __p=[],print=function(){__p.push.apply(__p,arguments);};' +
       'with(obj||{}){__p.push(\'' +
       str.replace(/\\/g, '\\\\')
          .replace(/'/g, "\\'")
          .replace(c.interpolate, function(match, code) {
            return "'," + code.replace(/\\'/g, "'") + ",'";
+         })
+         .replace(c.escape || null, function(match, code) {
+           return "'," + _.escapeHTML(code.replace(/\\'/g, "'")) + ",'";
          })
          .replace(c.evaluate || null, function(match, code) {
            return "');" + code.replace(/\\'/g, "'")
@@ -2205,7 +2218,7 @@ var __hasProp = Object.prototype.hasOwnProperty;
 coerce = function(value, type) {
   var date;
   if (type === 'string') {
-    value = value ? '' + value : '';
+    value = value != null ? '' + value : '';
   } else if (type === 'number' || type === 'integer') {
     if (!_.isNaN(value)) {
       value = +value;
@@ -3357,7 +3370,7 @@ _.mixin({
     // For small amounts of DOM Elements, where a full-blown template isn't
     // needed, use **make** to manufacture elements, one at a time.
     //
-    //     var el = this.make('li', {'class': 'row'}, this.model.get('title'));
+    //     var el = this.make('li', {'class': 'row'}, this.model.escape('title'));
     //
     make : function(tagName, attributes, content) {
       var el = document.createElement(tagName);
@@ -3577,240 +3590,10 @@ _.mixin({
 
   // Helper function to escape a string for HTML rendering.
   var escapeHTML = function(string) {
-    return string.replace(/&(?!\w+;)/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return string.replace(/&(?!\w+;|#\d+;|#x[\da-f]+;)/gi, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   };
 
 }).call(this);
-// Underscore.string
-// (c) 2010 Esa-Matti Suuronen <esa-matti aet suuronen dot org>
-// Underscore.strings is freely distributable under the terms of the MIT license.
-// Documentation: https://github.com/edtsech/underscore.string
-// Some code is borrowed from MooTools and Alexandru Marasteanu.
-
-// Version 1.0.1
-
-(function(){
-    // ------------------------- Baseline setup ---------------------------------
-
-    // Establish the root object, "window" in the browser, or "global" on the server.
-    var root = this;
-
-    var nativeTrim = String.prototype.trim;
-
-    function str_repeat(i, m) {
-        for (var o = []; m > 0; o[--m] = i);
-        return o.join('');
-    }
-
-    function defaultToWhiteSpace(characters){
-        if (characters) {
-            return _s.escapeRegExp(characters);
-        }
-        return '\\s';
-    }
-
-    var _s = {
-
-        isBlank: function(str){
-            return !!str.match(/^\s*$/);
-        },
-
-        capitalize : function(str) {
-            return str.charAt(0).toUpperCase() + str.substring(1).toLowerCase();
-        },
-
-        chop: function(str, step){
-            step = step || str.length;
-            var arr = [];
-            for (var i = 0; i < str.length;) {
-                arr.push(str.slice(i,i + step));
-                i = i + step;
-            }
-            return arr;
-        },
-
-        clean: function(str){
-            return _s.strip(str.replace(/\s+/g, ' '));
-        },
-
-        contains: function(str, needle){
-            return str.indexOf(needle) !== -1;
-        },
-
-        count: function(str, substr){
-            var count = 0, index;
-            for (var i=0; i < str.length;) {
-                index = str.indexOf(substr, i);
-                index >= 0 && count++;
-                i = i + (index >= 0 ? index : 0) + substr.length;
-            }
-            return count;
-        },
-
-        escapeHTML: function(str) {
-            return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        },
-
-        unescapeHTML: function(str) {
-            return String(str||'').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-        },
-
-        escapeRegExp: function(str){
-            // From MooTools core 1.2.4
-            return String(str||'').replace(/([-.*+?^${}()|[\]\/\\])/g, '\\$1');
-        },
-
-        insert: function(str, i, substr){
-            var arr = str.split('');
-            arr.splice(i, 0, substr);
-            return arr.join('');
-        },
-
-        join: function(sep) {
-            // TODO: Could this be faster by converting
-            // arguments to Array and using array.join(sep)?
-            sep = String(sep);
-            var str = "";
-            for (var i=1; i < arguments.length; i += 1) {
-                str += String(arguments[i]);
-                if ( i !== arguments.length-1 ) {
-                    str += sep;
-                }
-            }
-            return str;
-        },
-
-        reverse: function(str){
-            return Array.prototype.reverse.apply(str.split('')).join('');
-        },
-
-        splice: function(str, i, howmany, substr){
-            var arr = str.split('');
-            arr.splice(i, howmany, substr);
-            return arr.join('');
-        },
-
-        startsWith: function(str, starts){
-            return str.length >= starts.length && str.substring(0, starts.length) === starts;
-        },
-
-        endsWith: function(str, ends){
-            return str.length >= ends.length && str.substring(str.length - ends.length) === ends;
-        },
-
-        succ: function(str){
-            var arr = str.split('');
-            arr.splice(str.length-1, 1, String.fromCharCode(str.charCodeAt(str.length-1) + 1));
-            return arr.join('');
-        },
-
-        titleize: function(str){
-            var arr = str.split(' '),
-                word;
-            for (var i=0; i < arr.length; i++) {
-                word = arr[i].split('');
-                if(typeof word[0] !== 'undefined') word[0] = word[0].toUpperCase();
-                i+1 === arr.length ? arr[i] = word.join('') : arr[i] = word.join('') + ' ';
-            }
-            return arr.join('');
-        },
-
-        trim: function(str, characters){
-            if (!characters && nativeTrim) {
-                return nativeTrim.call(str);
-            }
-            characters = defaultToWhiteSpace(characters);
-            return str.replace(new RegExp('\^[' + characters + ']+|[' + characters + ']+$', 'g'), '');
-        },
-
-        ltrim: function(str, characters){
-            characters = defaultToWhiteSpace(characters);
-            return str.replace(new RegExp('\^[' + characters + ']+', 'g'), '');
-        },
-
-        rtrim: function(str, characters){
-            characters = defaultToWhiteSpace(characters);
-            return str.replace(new RegExp('[' + characters + ']+$', 'g'), '');
-        },
-
-        truncate: function(str, length, truncateStr){
-            truncateStr = truncateStr || '...';
-            return str.slice(0,length) + truncateStr;
-        },
-
-        /**
-         * Credits for this function goes to
-         * http://www.diveintojavascript.com/projects/sprintf-for-javascript
-         *
-         * Copyright (c) Alexandru Marasteanu <alexaholic [at) gmail (dot] com>
-         * All rights reserved.
-         * */
-        sprintf: function(){
-
-            var i = 0, a, f = arguments[i++], o = [], m, p, c, x, s = '';
-            while (f) {
-                if (m = /^[^\x25]+/.exec(f)) {
-                    o.push(m[0]);
-                }
-                else if (m = /^\x25{2}/.exec(f)) {
-                    o.push('%');
-                }
-                else if (m = /^\x25(?:(\d+)\$)?(\+)?(0|'[^$])?(-)?(\d+)?(?:\.(\d+))?([b-fosuxX])/.exec(f)) {
-                    if (((a = arguments[m[1] || i++]) == null) || (a == undefined)) {
-                        throw('Too few arguments.');
-                    }
-                    if (/[^s]/.test(m[7]) && (typeof(a) != 'number')) {
-                        throw('Expecting number but found ' + typeof(a));
-                    }
-                    switch (m[7]) {
-                        case 'b': a = a.toString(2); break;
-                        case 'c': a = String.fromCharCode(a); break;
-                        case 'd': a = parseInt(a); break;
-                        case 'e': a = m[6] ? a.toExponential(m[6]) : a.toExponential(); break;
-                        case 'f': a = m[6] ? parseFloat(a).toFixed(m[6]) : parseFloat(a); break;
-                        case 'o': a = a.toString(8); break;
-                        case 's': a = ((a = String(a)) && m[6] ? a.substring(0, m[6]) : a); break;
-                        case 'u': a = Math.abs(a); break;
-                        case 'x': a = a.toString(16); break;
-                        case 'X': a = a.toString(16).toUpperCase(); break;
-                    }
-                    a = (/[def]/.test(m[7]) && m[2] && a >= 0 ? '+'+ a : a);
-                    c = m[3] ? m[3] == '0' ? '0' : m[3].charAt(1) : ' ';
-                    x = m[5] - String(a).length - s.length;
-                    p = m[5] ? str_repeat(c, x) : '';
-                    o.push(s + (m[4] ? a + p : p + a));
-                }
-                else {
-                    throw('Huh ?!');
-                }
-                f = f.substring(m[0].length);
-            }
-            return o.join('');
-        }
-    }
-
-    // Aliases
-
-    _s.strip      = _s.trim;
-    _s.lstrip     = _s.ltrim;
-    _s.rstrip     = _s.rtrim;
-    _s.includes   = _s.contains;
-
-    // CommonJS module is defined
-    if (typeof window === 'undefined' && typeof module !== 'undefined') {
-        // Export module
-        module.exports = _s;
-
-    // Integrate with Underscore.js
-    } else if (typeof root._ !== 'undefined') {
-        root._.mixin(_s);
-
-    // Or define it
-    } else {
-        root._ = _s;
-    }
-
-}());
 //      index.js
 //
 //      Copyright 2010 dvv <dronnikov@gmail.com>

@@ -7,7 +7,7 @@ module.exports =
 		port: 3000
 		#workers: require('os').cpus().length
 		shutdownTimeout: 10000
-		websocket: true
+		#websocket: true
 		#uid: 65534
 		#gid: 65534
 		#pwd: './secured-root'
@@ -21,7 +21,7 @@ module.exports =
 
 	security:
 
-		#bypass: true
+		bypass: true
 		secret: 'change-me-on-production-server'
 		root:
 			id: 'root'

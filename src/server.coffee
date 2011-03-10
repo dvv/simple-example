@@ -1,11 +1,7 @@
-#!/usr/bin/env coffee
 'use strict'
 
-process.argv.shift() # still reports 'node' as argv[0]
-#require.paths.unshift __dirname + '/lib/node'
-
 config = require './config'
-simple = require '../node_modules/simple'
+simple = require 'simple'
 
 All {},
 
@@ -37,15 +33,11 @@ All {},
 		#
 		# define middleware stack
 		#
-		handler = simple.stack(
+		getHandler = (server) -> simple.stack(
 
 			# parse JSON payload
 			simple.handlers.jsonBody
 				maxLength: 0 # set to >0 to limit the number of bytes
-
-			#simple.handlers.mount '/foo1',
-			#	get: (req, res, next) -> res.send 'GETFOO1'
-			#	post: (req, res, next) -> res.send 'POSTFOO1'
 
 			#simple.handlers.body
 			#	uploadDir: config.upload.dir
@@ -56,32 +48,41 @@ All {},
 				secret: config.security.secret
 				getContext: app.getContext
 
-			#simple.handlers.mount 'GET', '/home', (req, res, next) ->
-			#	res.send 'FOO'
-
-			#simple.handlers.logRequest()
-
 			# RPC+REST
 			simple.handlers.jsonrpc
 				maxBodyLength: 0 # set to >0 to limit the number of bytes
 
 			simple.handlers.mount 'GET', '/geo', (req, res, next) ->
-				res.send require('fs').readFileSync('./node_modules/geoip/geo.json')
+				res.send require('fs').readFileSync('../node_modules/simple-geoip/geo.json')
 
 			simple.handlers.mount 'GET', '/course', (req, res, next) ->
-				require('./currency').fetchExchangeRates 'rub', (err, data) ->
+				require('./currency').fetchExchangeRates config.defaults.currency, (err, data) ->
 					res.send err or data
 
 			# serve chrome page
-			#simple.handlers.chrome()
+			simple.handlers.dynamic
+				map:
+					'/': 'public/index.html'
 
 			# serve remaining static resourses
-			simple.handlers.static_
-				dir: config.server.pub.dir
-				#honorType: true
-				ttl: config.server.pub.ttl
+			simple.handlers.static
+				root: config.server.pub.dir
+				default: 'index.html'
+				#cacheMaxFileSizeToCache: 1024 # set to limit the size of cacheable file
+				cacheTTL: 1000
 
 		)
+
+		#
+		# compose application
+		#
+		app = Object.freeze
+			#getContext: app.getContext
+			getHandler: getHandler
+			messageHandler: (broadcaster, message) -> # @ === worker
+				if message.channel is 'bcast'
+					console.error 'BCAST!', message
+					broadcaster? message.data
 
 		#
 		# run the application
@@ -91,7 +92,7 @@ All {},
 			require('../test/000.basics') app
 
 		#
-		simple.run handler, config.server
+		simple.run app, config.server
 
 	#
 	# define fallback
