@@ -1,0 +1,2 @@
+#!/bin/sh
+coffee -bc -o lib src/* && node lib/server.js

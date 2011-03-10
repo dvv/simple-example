@@ -1,8 +1,4 @@
-#!/usr/bin/env coffee
 'use strict'
-
-process.argv.shift() # still report 'node' as argv[0]
-require.paths.unshift '../node_modules' # coffee counts from coffee-script binary so far
 
 config = require './config'
 simple = require 'simple'
@@ -46,10 +42,6 @@ All {},
 			simple.handlers.jsonBody
 				maxLength: 0 # set to >0 to limit the number of bytes
 
-			#simple.handlers.mount '/foo1',
-			#	get: (req, res, next) -> res.send 'GETFOO1'
-			#	post: (req, res, next) -> res.send 'POSTFOO1'
-
 			#simple.handlers.body
 			#	uploadDir: config.upload.dir
 
@@ -59,38 +51,28 @@ All {},
 				secret: config.security.secret
 				getContext: getContext
 
-			#simple.handlers.mount 'GET', '/home', (req, res, next) ->
-			#	res.send 'FOO'
-
-			#simple.handlers.logRequest()
-
 			# RPC+REST
 			simple.handlers.jsonrpc
 				maxBodyLength: 0 # set to >0 to limit the number of bytes
 
-			#simple.handlers.mount 'POST', '/foo', (req, res, next) ->
-			#	res.send 'FOO'
-
 			simple.handlers.mount 'GET', '/geo', (req, res, next) ->
-				res.send require('fs').readFileSync('geoip/geo.json')
+				res.send require('fs').readFileSync('../node_modules/simple-geoip/geo.json')
 
 			simple.handlers.mount 'GET', '/course', (req, res, next) ->
-				require('./currency').fetchExchangeRates 'rub', (err, data) ->
+				require('./currency').fetchExchangeRates config.defaults.currency, (err, data) ->
 					res.send err or data
 
+			# serve chrome page
 			simple.handlers.dynamic
 				map:
-					'/': 'test/index.html'
+					'/': 'public/index.html'
 
-			simple.handlers.mount 'GET', '/foo2', (req, res, next) ->
-				res.send 'GOT FROM HOME'
-
+			# serve remaining static resourses
 			simple.handlers.static
 				root: config.server.pub.dir
 				default: 'index.html'
 				#cacheMaxFileSizeToCache: 1024 # set to limit the size of cacheable file
 				cacheTTL: 1000
-				process: simple.handlers.helpers.template()
 
 		)
 
@@ -98,6 +80,7 @@ All {},
 		# compose application
 		#
 		app = Object.freeze
+			#getContext: app.getContext
 			getHandler: getHandler
 			messageHandler: (broadcaster, message) -> # @ === worker
 				if message.channel is 'bcast'

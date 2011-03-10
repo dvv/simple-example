@@ -3,3 +3,4 @@ node_modules
 upload
 hz
 *.dat
+.ipc
